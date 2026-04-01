@@ -37,6 +37,7 @@
 #include <QApplication>
 #include <QDebug>
 #include <QPainter>
+#include <QPainterPath>
 #include <QTextLayout>
 #include <QTextOption>
 #include <QtMath>
@@ -274,11 +275,9 @@ void ListViewDelegate::updateEditorGeometry(QWidget* editor,
                                             const QStyleOptionViewItem& option,
                                             [[maybe_unused]] const QModelIndex& index) const
 {
-    const int iconSize = 48;
-    QRect textRect = option.rect;
-    // QStyle *style = option.widget ? option.widget->style() : QApplication::style();
-    textRect.adjust(0, iconSize + 5, 0, 0);
-    editor->setGeometry(textRect);
+    QRect cardRect = option.rect.adjusted(10, 10, -10, -10);
+    QRect titleRect(cardRect.left(), cardRect.bottom() - 50, cardRect.width(), 50);
+    editor->setGeometry(titleRect);
 }
 
 void ListViewDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const

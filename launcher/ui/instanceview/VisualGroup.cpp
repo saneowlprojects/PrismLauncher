@@ -126,7 +126,6 @@ VisualGroup::HitResults VisualGroup::hitScan(const QPoint& pos) const
         results = VisualGroup::NoHit;
     } else if (y < body_start) {
         results = VisualGroup::HeaderHit;
-        int collapseSize = headerHeight() - 4;
 
         // the icon area for collapsing/expanding
         int left = view->contentsMargins().left();
