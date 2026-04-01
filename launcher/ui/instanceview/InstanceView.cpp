@@ -263,7 +263,8 @@ int InstanceView::calculateItemsPerRow() const
 
 int InstanceView::contentWidth() const
 {
-    return width() - m_leftMargin - m_rightMargin;
+    auto margins = contentsMargins();
+    return width() - margins.left() - margins.right();
 }
 
 int InstanceView::itemWidth() const
@@ -724,7 +725,7 @@ QRect InstanceView::geometryRect(const QModelIndex& index) const
 
     QRect out;
     out.setTop(cat->verticalPosition() + cat->headerHeight() + 5 + cat->rowTopOf(index));
-    out.setLeft(m_spacing + x * (itemWidth() + m_spacing));
+    out.setLeft(contentsMargins().left() + x * (itemWidth() + m_spacing));
     out.setSize(itemDelegate()->sizeHint(option, index));
     m_geometryCache.insert(row, new QRect(out));
     return out;

@@ -78,6 +78,8 @@ class InstanceView : public QAbstractItemView {
     virtual QRegion visualRegionForSelection(const QItemSelection& selection) const override;
 
     int spacing() const { return m_spacing; };
+    void setSpacing(int spacing) { m_spacing = spacing; scheduleDelayedItemsLayout(); }
+    void setItemWidth(int width) { m_itemWidth = width; scheduleDelayedItemsLayout(); }
     void setPaintCat(bool visible);
 
    public slots:

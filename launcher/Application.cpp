@@ -1400,14 +1400,14 @@ void Application::performMainStartupAction()
                             task->setGroup("Minecraft");
                             task->setIcon("default");
                             auto wrapper = instances()->wrapInstanceTask(task);
-                            connect(wrapper, &Task::failed, this, [this](QString reason) {
+                            connect(wrapper, &Task::failed, this, [](QString reason) {
                                 qDebug() << "Auto-install failed:" << reason;
                             });
                             connect(wrapper, &Task::finished, wrapper, &QObject::deleteLater);
                             wrapper->start();
                         }
                     });
-                    connect(rawLoadTask, &Task::failed, this, [this](QString reason) {
+                    connect(rawLoadTask, &Task::failed, this, [](QString reason) {
                         qDebug() << "Failed to load Minecraft version list for auto-install:" << reason;
                     });
                     connect(rawLoadTask, &Task::finished, this, [this, rawLoadTask]() {

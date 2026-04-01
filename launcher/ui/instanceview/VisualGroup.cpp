@@ -69,7 +69,7 @@ void VisualGroup::update()
             if (currentRow >= rows.size()) {
                 currentRow = rows.size() - 1;
             }
-            offsetFromTop += maxRowHeight + 5;
+            offsetFromTop += maxRowHeight + view->spacing();
             positionInRow = 0;
             maxRowHeight = 0;
         }
@@ -128,8 +128,9 @@ VisualGroup::HitResults VisualGroup::hitScan(const QPoint& pos) const
         results = VisualGroup::HeaderHit;
         int collapseSize = headerHeight() - 4;
 
-        // the icon
-        QRect iconRect = QRect(view->m_leftMargin + 2, 2 + y_start, view->width() - 4, collapseSize);
+        // the icon area for collapsing/expanding
+        int left = view->contentsMargins().left();
+        QRect iconRect = QRect(left, y_start, view->width() - (2 * left), headerHeight());
         if (iconRect.contains(pos)) {
             results |= VisualGroup::CheckboxHit;
         }

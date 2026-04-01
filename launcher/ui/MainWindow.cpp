@@ -307,12 +307,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         view = new InstanceView(ui->centralWidget);
 
         view->setSelectionMode(QAbstractItemView::SingleSelection);
-        view->setViewMode(QListView::IconMode);
-        view->setFlow(QListView::LeftToRight);
-        view->setMovement(QListView::Static);
-        view->setResizeMode(QListView::Adjust);
-        view->setWrapping(true);
-        view->setWordWrap(true);
+        view->setItemWidth(300);
         view->setSpacing(40);
         view->setContentsMargins(60, 20, 60, 20);
         
