@@ -197,16 +197,22 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     {
         auto foldersMenuButton = dynamic_cast<QToolButton*>(ui->mainToolBar->widgetForAction(ui->actionFoldersButton));
         ui->actionFoldersButton->setMenu(ui->foldersMenu);
-        foldersMenuButton->setPopupMode(QToolButton::InstantPopup);
+        if (foldersMenuButton) {
+            foldersMenuButton->setPopupMode(QToolButton::InstantPopup);
+        }
 
         helpMenuButton = dynamic_cast<QToolButton*>(ui->mainToolBar->widgetForAction(ui->actionHelpButton));
-        ui->actionHelpButton->setMenu(new QMenu(this));
-        ui->actionHelpButton->menu()->addActions(ui->helpMenu->actions());
-        ui->actionHelpButton->menu()->removeAction(ui->actionCheckUpdate);
-        helpMenuButton->setPopupMode(QToolButton::InstantPopup);
+        if (helpMenuButton) {
+            ui->actionHelpButton->setMenu(new QMenu(this));
+            ui->actionHelpButton->menu()->addActions(ui->helpMenu->actions());
+            ui->actionHelpButton->menu()->removeAction(ui->actionCheckUpdate);
+            helpMenuButton->setPopupMode(QToolButton::InstantPopup);
+        }
 
         auto accountMenuButton = dynamic_cast<QToolButton*>(ui->mainToolBar->widgetForAction(ui->actionAccountsButton));
-        accountMenuButton->setPopupMode(QToolButton::InstantPopup);
+        if (accountMenuButton) {
+            accountMenuButton->setPopupMode(QToolButton::InstantPopup);
+        }
 
         auto exportInstanceMenu = new QMenu(this);
         exportInstanceMenu->addAction(ui->actionExportInstanceZip);
