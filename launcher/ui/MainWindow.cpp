@@ -180,7 +180,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     qDebug() << "MainWindow: Rebuilding Navbar";
     m_otherInstancesLabel = new QLabel(tr("Other Instances"), this);
     m_otherInstancesLabel->setObjectName("otherInstancesLabel");
-    m_otherInstancesLabel->setStyleSheet("font-size: 30px; font-weight: bold; color: white; margin-top: 45px; margin-bottom: 20px;");
     m_otherInstancesLabel->setVisible(false);
 
     this->rebuildNavbar();
@@ -1868,13 +1867,17 @@ void MainWindow::updateHeroWidget() {
     if (m_heroWidget) m_heroWidget->setVisible(isPill);
     if (m_otherInstancesLabel) m_otherInstancesLabel->setVisible(isPill);
     
-    if (isPill) {
+    if (!isPill) {
+        if (m_wallpaperTimer) m_wallpaperTimer->stop();
+        m_currentBackground = QPixmap();
+        m_scaledBackground = QPixmap();
+        update();
+        return;
+    } else {
         if (m_wallpaperTimer && !m_wallpaperTimer->isActive()) {
             m_wallpaperTimer->start(15000);
             updateBackground();
         }
-    } else {
-        return;
     }
 
     if (!m_heroTitle || !m_heroButton) return;
@@ -1887,15 +1890,23 @@ void MainWindow::updateHeroWidget() {
         if (minecraftInst) {
             if (auto modList = minecraftInst->loaderModList()) {
                 for (auto* mod : modList->allResources()) {
-                    if (mod && mod->isEnabled()) modCount++;
+                    if (mod && mod->enabled()) modCount++;
                 }
             }
             version = minecraftInst->getPackProfile()->getComponentVersion("net.minecraft");
         }
 
         // Badge: TYPE • [N] mods
-        QString type = "MODPACK";
-        if (modCount == 0) type = "VANILLA";
+        QString type = "VANILLA";
+        if (minecraftInst) {
+            auto profile = minecraftInst->getPackProfile();
+            bool hasLoader = !profile->getComponentVersion("net.fabricmc.fabric-loader").isEmpty()
+                          || !profile->getComponentVersion("net.minecraftforge").isEmpty()
+                          || !profile->getComponentVersion("net.neoforged").isEmpty()
+                          || !profile->getComponentVersion("org.quiltmc.quilt-loader").isEmpty();
+            if (hasLoader && modCount > 0) type = "MODPACK";
+            else if (hasLoader) type = "MODDED";
+        }
         if (m_selectedInstance->instanceType() == "Legacy") type = "LEGACY";
         
         m_heroBadge->setText(QString("%1 • %2 MODS").arg(type).arg(modCount));
@@ -1905,10 +1916,10 @@ void MainWindow::updateHeroWidget() {
         QString timeStr = tr("never");
         if (lastLaunch > 0) {
             qint64 diff = QDateTime::currentMSecsSinceEpoch() - lastLaunch;
-            if (diff < 60000) timeStr = tr("just now");
-            else if (diff < 3600000) timeStr = tr("%1 minutes ago").arg(diff / 60000);
-            else if (diff < 86400000) timeStr = tr("%1 hours ago").arg(diff / 3600000);
-            else timeStr = tr("%1 days ago").arg(diff / 86400000);
+            if (diff < 60000LL) timeStr = tr("just now");
+            else if (diff < 3600000LL) timeStr = tr("%1 minutes ago").arg(diff / 60000LL);
+            else if (diff < 86400000LL) timeStr = tr("%1 hours ago").arg(diff / 3600000LL);
+            else timeStr = tr("%1 days ago").arg(diff / 86400000LL);
         }
 
         m_heroDescription->setText(QString("Continue your adventure in %1 %2. Last played %3.")

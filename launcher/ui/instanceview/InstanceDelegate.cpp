@@ -149,9 +149,6 @@ void drawBadges(QPainter* painter, const QStyleOptionViewItem& option, BaseInsta
             }
             // FIXME: inject this.
             auto icon = QIcon::fromTheme(it.next());
-            // opt.icon.paint(painter, iconbox, Qt::AlignCenter, mode, state);
-            const QPixmap pixmap;
-            // itemSide
             QRect badgeRect(option.rect.width() - x * itemSide + qMax(x - 1, 0) * spacing - itemSide,
                             y * itemSide + qMax(y - 1, 0) * spacing, itemSide, itemSide);
             icon.paint(painter, badgeRect, Qt::AlignCenter, mode, state);
@@ -208,13 +205,16 @@ void ListViewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     if (selected) {
         painter->setPen(QPen(Qt::white, 6));
         painter->drawPath(path);
-        
-        // Title overlay for selected item
+
+        // Title overlay for selected item — clipped to card rounded corners
+        painter->save();
+        painter->setClipPath(path);
         painter->setBrush(QColor(0, 0, 0, 180));
         painter->setPen(Qt::NoPen);
         QRect titleRect(cardRect.left(), cardRect.bottom() - 50, cardRect.width(), 50);
         painter->drawRect(titleRect);
-        
+        painter->restore();
+
         painter->setPen(Qt::white);
         QFont font = opt.font;
         font.setPixelSize(18);

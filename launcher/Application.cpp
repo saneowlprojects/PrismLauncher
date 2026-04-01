@@ -1375,24 +1375,8 @@ void Application::performMainStartupAction()
             qDebug() << "No instances found. Auto-installing the latest Minecraft release.";
             if (metadataIndex()) {
                 auto vlist = metadataIndex()->get("net.minecraft");
-            if (vlist) {
-                if (vlist->isLoaded()) {
-                    auto latest = vlist->getRecommended();
-                    if (latest) {
-                        auto task = new VanillaCreationTask(latest);
-                        InstanceName inst_name("Latest Release", latest->descriptor());
-                        task->setName(inst_name);
-                        task->setGroup("Minecraft");
-                        task->setIcon("default");
-                        auto wrapper = instances()->wrapInstanceTask(task);
-                        connect(wrapper, &Task::finished, wrapper, &QObject::deleteLater);
-                        wrapper->start();
-                    }
-                } else {
-                    Task::Ptr loadTask = vlist->getLoadTask();
-                    m_persistentTasks.append(loadTask);
-                    Task* rawLoadTask = loadTask.get();
-                    connect(rawLoadTask, &Task::succeeded, this, [this, vlist]() {
+                if (vlist) {
+                    if (vlist->isLoaded()) {
                         auto latest = vlist->getRecommended();
                         if (latest) {
                             auto task = new VanillaCreationTask(latest);
@@ -1401,25 +1385,41 @@ void Application::performMainStartupAction()
                             task->setGroup("Minecraft");
                             task->setIcon("default");
                             auto wrapper = instances()->wrapInstanceTask(task);
-                            connect(wrapper, &Task::failed, this, [](QString reason) {
-                                qDebug() << "Auto-install failed:" << reason;
-                            });
                             connect(wrapper, &Task::finished, wrapper, &QObject::deleteLater);
                             wrapper->start();
                         }
-                    });
-                    connect(rawLoadTask, &Task::failed, this, [](QString reason) {
-                        qDebug() << "Failed to load Minecraft version list for auto-install:" << reason;
-                    });
-                    connect(rawLoadTask, &Task::finished, this, [this, rawLoadTask]() {
-                        m_persistentTasks.removeIf([rawLoadTask](const Task::Ptr& p) { return p.get() == rawLoadTask; });
-                    });
-                    loadTask->start();
-                }
-            }
-        }
-    }
-}
+                    } else {
+                        Task::Ptr loadTask = vlist->getLoadTask();
+                        m_persistentTasks.append(loadTask);
+                        Task* rawLoadTask = loadTask.get();
+                        connect(rawLoadTask, &Task::succeeded, this, [this, vlist]() {
+                            auto latest = vlist->getRecommended();
+                            if (latest) {
+                                auto task = new VanillaCreationTask(latest);
+                                InstanceName inst_name("Latest Release", latest->descriptor());
+                                task->setName(inst_name);
+                                task->setGroup("Minecraft");
+                                task->setIcon("default");
+                                auto wrapper = instances()->wrapInstanceTask(task);
+                                connect(wrapper, &Task::failed, this, [](QString reason) {
+                                    qDebug() << "Auto-install failed:" << reason;
+                                });
+                                connect(wrapper, &Task::finished, wrapper, &QObject::deleteLater);
+                                wrapper->start();
+                            }
+                        });
+                        connect(rawLoadTask, &Task::failed, this, [](QString reason) {
+                            qDebug() << "Failed to load Minecraft version list for auto-install:" << reason;
+                        });
+                        connect(rawLoadTask, &Task::finished, this, [this, rawLoadTask]() {
+                            m_persistentTasks.removeIf([rawLoadTask](const Task::Ptr& p) { return p.get() == rawLoadTask; });
+                        });
+                        loadTask->start();
+                    }
+                } // end if (vlist)
+            } // end if (metadataIndex())
+        } // end if (m_instances->count() == 0)
+    } // end if (!m_mainWindow)
 
     // initialize the updater
     if (updaterEnabled()) {
