@@ -884,6 +884,8 @@ SET(LAUNCHER_SOURCES
     ui/themes/BrightTheme.h
     ui/themes/CustomTheme.cpp
     ui/themes/CustomTheme.h
+    ui/themes/PillTheme.cpp
+    ui/themes/PillTheme.h
     ui/themes/DarkTheme.cpp
     ui/themes/DarkTheme.h
     ui/themes/ITheme.cpp

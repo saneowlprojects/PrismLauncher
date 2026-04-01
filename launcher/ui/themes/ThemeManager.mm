@@ -29,16 +29,41 @@ void ThemeManager::setTitlebarColorOnMac(WId windowId, QColor color)
     NSView* view = (NSView*)windowId;
     NSWindow* window = [view window];
     window.titlebarAppearsTransparent = YES;
-    window.backgroundColor = [NSColor colorWithRed:color.redF() green:color.greenF() blue:color.blueF() alpha:color.alphaF()];
+    window.backgroundColor = [NSColor clearColor]; // Clear so visual effect shows through
+    window.styleMask |= NSWindowStyleMaskFullSizeContentView;
 
-    // Unfortunately there seems to be no easy way to set the titlebar text color.
-    // The closest we can do without dubious hacks is set the dark/light mode state based on the brightness of the
-    // background color, which should at least make the text readable even if we can't use the theme's text color.
-    // It's a good idea to set this anyway since it also affects some other UI elements like text shadows (PrismLauncher#3825).
-    if (color.lightnessF() < 0.5) {
-        window.appearance = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
+    // Remove existing visual effect views to avoid duplicates
+    for (NSView *subview in view.subviews) {
+        if ([subview isKindOfClass:[NSVisualEffectView class]]) {
+            [subview removeFromSuperview];
+        }
+    }
+
+    if (color.alphaF() < 1.0) {
+        // Apply Liquid Glass / translucent blur
+        NSVisualEffectView* blurView = [[NSVisualEffectView alloc] initWithFrame:view.bounds];
+        blurView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+        // Use a material that gives a nice dark/light glass feel
+        blurView.material = (color.lightnessF() < 0.5) ? NSVisualEffectMaterialUnderWindowBackground : NSVisualEffectMaterialWindowBackground;
+        blurView.blendingMode = NSVisualEffectBlendingModeBehindWindow;
+        blurView.state = NSVisualEffectStateActive;
+        
+        // Insert it at the absolute back
+        [view addSubview:blurView positioned:NSWindowBelow relativeTo:nil];
+        
+        if (color.lightnessF() < 0.5) {
+            window.appearance = [NSAppearance appearanceNamed:NSAppearanceNameVibrantDark];
+        } else {
+            window.appearance = [NSAppearance appearanceNamed:NSAppearanceNameVibrantLight];
+        }
     } else {
-        window.appearance = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
+        // Standard opaque background
+        window.backgroundColor = [NSColor colorWithRed:color.redF() green:color.greenF() blue:color.blueF() alpha:color.alphaF()];
+        if (color.lightnessF() < 0.5) {
+            window.appearance = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
+        } else {
+            window.appearance = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
+        }
     }
 }
 
