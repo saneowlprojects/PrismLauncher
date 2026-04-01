@@ -266,6 +266,7 @@ class Application : public QApplication {
     std::unique_ptr<MCEditTool> m_mcedit;
     QSet<QString> m_features;
     std::unique_ptr<ThemeManager> m_themeManager;
+    QList<Task::Ptr> m_persistentTasks;
 
     QMap<QString, std::shared_ptr<BaseProfilerFactory>> m_profilers;
 

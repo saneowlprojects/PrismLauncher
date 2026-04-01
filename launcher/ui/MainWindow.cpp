@@ -1759,7 +1759,11 @@ void MainWindow::setupHeroWidget() {
 }
 
 void MainWindow::updateBackground() {
-    if (m_wallpapers.isEmpty()) return;
+    if (APPLICATION->settings()->get("ApplicationTheme").toString() != "pill") {
+        m_wallpaperTimer->stop();
+        this->setStyleSheet("");
+        return;
+    }
     
     QString bgPath = m_wallpapers[m_currentWallpaperIndex];
     m_currentWallpaperIndex = (m_currentWallpaperIndex + 1) % m_wallpapers.size();

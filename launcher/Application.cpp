@@ -1388,8 +1388,10 @@ void Application::performMainStartupAction()
                         wrapper->start();
                     }
                 } else {
-                    auto loadTaskHolder = new std::shared_ptr<Task>(vlist->getLoadTask());
-                    connect(loadTaskHolder->get(), &Task::succeeded, this, [this, vlist]() {
+                    Task::Ptr loadTask = vlist->getLoadTask();
+                    m_persistentTasks.append(loadTask);
+                    Task* rawLoadTask = loadTask.get();
+                    connect(rawLoadTask, &Task::succeeded, this, [this, vlist]() {
                         auto latest = vlist->getRecommended();
                         if (latest) {
                             auto task = new VanillaCreationTask(latest);
@@ -1398,14 +1400,20 @@ void Application::performMainStartupAction()
                             task->setGroup("Minecraft");
                             task->setIcon("default");
                             auto wrapper = instances()->wrapInstanceTask(task);
+                            connect(wrapper, &Task::failed, this, [this](QString reason) {
+                                qDebug() << "Auto-install failed:" << reason;
+                            });
                             connect(wrapper, &Task::finished, wrapper, &QObject::deleteLater);
                             wrapper->start();
                         }
                     });
-                    connect(loadTaskHolder->get(), &Task::finished, this, [loadTaskHolder]() {
-                        delete loadTaskHolder;
+                    connect(rawLoadTask, &Task::failed, this, [this](QString reason) {
+                        qDebug() << "Failed to load Minecraft version list for auto-install:" << reason;
                     });
-                    (*loadTaskHolder)->start();
+                    connect(rawLoadTask, &Task::finished, this, [this, rawLoadTask]() {
+                        m_persistentTasks.removeIf([rawLoadTask](const Task::Ptr& p) { return p.get() == rawLoadTask; });
+                    });
+                    loadTask->start();
                 }
             }
         }
