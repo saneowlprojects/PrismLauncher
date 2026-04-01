@@ -45,6 +45,7 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 
+#include <QString>
 #include <QDir>
 #include <QFileInfo>
 #include <QUrl>
@@ -72,6 +73,9 @@
 #include <QStatusBar>
 #include <QToolBar>
 #include <QToolButton>
+#include <QPainter>
+#include <QPaintEvent>
+#include <QIcon>
 #include <QWidget>
 #include <QWidgetAction>
 #include <memory>
@@ -157,11 +161,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     setAccessibleName(BuildConfig.LAUNCHER_DISPLAYNAME);
 #endif
 
-    // strictly float and center the main toolbar horizontally
-    removeToolBar(ui->mainToolBar);
-    ui->mainToolBar->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    ui->mainLayout->insertWidget(0, ui->mainToolBar);
-    ui->mainLayout->setAlignment(ui->mainToolBar, Qt::AlignHCenter | Qt::AlignTop);
+    statusBar()->hide();
+
+    this->rebuildNavbar();
 
     // instance toolbar stuff
     {
@@ -655,9 +657,11 @@ void MainWindow::updateThemeMenu()
         }
         themeAction->setActionGroup(themesGroup);
 
-        connect(themeAction, &QAction::triggered, [theme]() {
+        connect(themeAction, &QAction::triggered, this, [this, theme]() {
             APPLICATION->themeManager()->setApplicationTheme(theme->id());
             APPLICATION->settings()->set("ApplicationTheme", theme->id());
+            this->rebuildNavbar();
+            this->updateHeroWidget();
         });
     }
 
@@ -1725,25 +1729,30 @@ void MainWindow::setupHeroWidget() {
     m_heroWidget->setObjectName("heroWidget");
     auto heroLayout = new QVBoxLayout(m_heroWidget);
     
+    m_heroBadge = new QLabel("SURVIVAL • 45 mods", m_heroWidget);
+    m_heroBadge->setObjectName("heroBadge");
+    
     m_heroTitle = new QLabel("Resume Play", m_heroWidget);
     m_heroTitle->setObjectName("heroTitle");
     
-    m_heroSubtitle = new QLabel("No instance selected", m_heroWidget);
-    m_heroSubtitle->setObjectName("heroSubtitle");
+    m_heroDescription = new QLabel("Continue your adventure in Minecraft. Last played 2 hours ago.", m_heroWidget);
+    m_heroDescription->setObjectName("heroDescription");
+    m_heroDescription->setWordWrap(true);
     
+    auto effect0 = new QGraphicsDropShadowEffect(m_heroBadge);
+    effect0->setBlurRadius(10);
+    effect0->setColor(QColor(0, 0, 0, 150));
+    effect0->setOffset(0, 2);
+    m_heroBadge->setGraphicsEffect(effect0);
+
     auto effect1 = new QGraphicsDropShadowEffect(m_heroTitle);
     effect1->setBlurRadius(15);
     effect1->setColor(QColor(0, 0, 0, 200));
     effect1->setOffset(0, 2);
     m_heroTitle->setGraphicsEffect(effect1);
 
-    auto effect2 = new QGraphicsDropShadowEffect(m_heroSubtitle);
-    effect2->setBlurRadius(15);
-    effect2->setColor(QColor(0, 0, 0, 200));
-    effect2->setOffset(0, 2);
-    m_heroSubtitle->setGraphicsEffect(effect2);
-    
-    m_heroButton = new QPushButton("Play", m_heroWidget);
+    m_heroButton = new QPushButton(" Launch Game", m_heroWidget);
+    m_heroButton->setIcon(QIcon::fromTheme("play"));
     m_heroButton->setObjectName("heroButton");
     connect(m_heroButton, &QPushButton::clicked, this, [this]() {
         if (m_selectedInstance) {
@@ -1751,10 +1760,22 @@ void MainWindow::setupHeroWidget() {
         }
     });
 
+    m_heroMoreButton = new QPushButton("More Info", m_heroWidget);
+    m_heroMoreButton->setObjectName("heroMoreButton");
+
+    auto buttonLayout = new QHBoxLayout();
+    buttonLayout->addWidget(m_heroButton);
+    buttonLayout->addWidget(m_heroMoreButton);
+    buttonLayout->addStretch(1);
+    buttonLayout->setSpacing(20);
+
     heroLayout->addStretch(1);
+    heroLayout->addWidget(m_heroBadge);
     heroLayout->addWidget(m_heroTitle);
-    heroLayout->addWidget(m_heroSubtitle);
-    heroLayout->addWidget(m_heroButton);
+    heroLayout->addWidget(m_heroDescription);
+    heroLayout->addSpacing(30);
+    heroLayout->addLayout(buttonLayout);
+    heroLayout->addSpacing(40);
     heroLayout->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     heroLayout->setContentsMargins(80, 0, 40, 0);
     
@@ -1780,24 +1801,112 @@ void MainWindow::setupHeroWidget() {
 void MainWindow::updateBackground() {
     if (APPLICATION->settings()->get("ApplicationTheme").toString() != "pill") {
         m_wallpaperTimer->stop();
-        this->setStyleSheet("");
+        m_currentBackground = QPixmap();
+        update();
         return;
     }
+    
+    if (m_wallpapers.isEmpty()) return;
     
     QString bgPath = m_wallpapers[m_currentWallpaperIndex];
     m_currentWallpaperIndex = (m_currentWallpaperIndex + 1) % m_wallpapers.size();
     
-    QString style = QString("QMainWindow { background-image: url('%1'); background-position: center; background-repeat: no-repeat; }").arg(bgPath);
-    this->setStyleSheet(style);
+    m_currentBackground.load(bgPath);
+    update();
+}
+
+void MainWindow::paintEvent(QPaintEvent* event) {
+    if (!m_currentBackground.isNull()) {
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::SmoothPixmapTransform);
+        painter.drawPixmap(rect(), m_currentBackground.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation));
+        
+        // Dynamic darkness overlay for readability
+        painter.fillRect(rect(), QColor(0, 0, 0, 80));
+    }
+    QMainWindow::paintEvent(event);
 }
 
 void MainWindow::updateHeroWidget() {
-    if (!m_heroSubtitle || !m_heroButton) return;
+    bool isPill = APPLICATION->settings()->get("ApplicationTheme").toString() == "pill";
+    if (m_heroWidget) m_heroWidget->setVisible(isPill);
+    if (m_otherInstancesLabel) m_otherInstancesLabel->setVisible(isPill);
+    if (!isPill) return;
+
+    if (!m_heroTitle || !m_heroButton) return;
     if (m_selectedInstance) {
-        m_heroSubtitle->setText(m_selectedInstance->name());
+        m_heroTitle->setText("Resume Play");
+        
+        // Mockup style metadata: TYPE • COUNT mods
+        QString type = "MODPACK";
+        if (m_selectedInstance->instanceType() == "Vanilla") type = "VANILLA";
+        
+        m_heroBadge->setText(QString("%1 • %2").arg(type).arg(m_selectedInstance->name()));
+        m_heroDescription->setText(QString("Continue your adventure in %1. Last played %2 hours ago.")
+            .arg(m_selectedInstance->name())
+            .arg(2)); // Placeholder '2' as per mockup
+            
         m_heroButton->setEnabled(true);
+        m_heroMoreButton->setVisible(true);
     } else {
-        m_heroSubtitle->setText(tr("No instance selected"));
+        m_heroTitle->setText(tr("Prism Launcher"));
+        m_heroBadge->setText(tr("NO SELECTION"));
+        m_heroDescription->setText("Select an instance below to view details.");
         m_heroButton->setEnabled(false);
+        m_heroMoreButton->setVisible(false);
     }
+}
+
+void MainWindow::rebuildNavbar() {
+    bool isPill = APPLICATION->settings()->get("ApplicationTheme").toString() == "pill";
+    
+    if (!isPill) {
+        ui->mainToolBar->show();
+        ui->instanceToolBar->show();
+        ui->newsToolBar->show();
+        statusBar()->show();
+        return;
+    }
+
+    this->setAttribute(Qt::WA_TranslucentBackground);
+    this->setAttribute(Qt::WA_NoSystemBackground, true);
+    if (this->centralWidget()) {
+        this->centralWidget()->setAttribute(Qt::WA_TranslucentBackground);
+        this->centralWidget()->setAutoFillBackground(false);
+    }
+    
+    ui->instanceToolBar->hide();
+    ui->newsToolBar->hide();
+    statusBar()->hide();
+    
+    ui->mainToolBar->clear();
+    
+    auto playAction = ui->mainToolBar->addAction("Play");
+    connect(playAction, &QAction::triggered, this, &MainWindow::on_actionLaunchInstance_triggered);
+    
+    auto instancesAction = ui->mainToolBar->addAction("Instances");
+    auto addAction = ui->mainToolBar->addAction("Add Instance");
+    connect(addAction, &QAction::triggered, this, &MainWindow::on_actionAddInstance_triggered);
+    
+    auto modsAction = ui->mainToolBar->addAction("Mods");
+    connect(modsAction, &QAction::triggered, this, &MainWindow::on_actionViewCentralModsFolder_triggered);
+    
+    auto settingsAction = ui->mainToolBar->addAction("Settings");
+    connect(settingsAction, &QAction::triggered, this, &MainWindow::on_actionSettings_triggered);
+
+    ui->mainToolBar->setObjectName("mainToolBar");
+    ui->mainToolBar->setMovable(false);
+    ui->mainToolBar->setFloatable(false);
+    ui->mainToolBar->setOrientation(Qt::Horizontal);
+    ui->mainToolBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    ui->mainLayout->insertWidget(0, ui->mainToolBar);
+    ui->mainLayout->setAlignment(ui->mainToolBar, Qt::AlignHCenter | Qt::AlignTop);
+
+    QTimer::singleShot(100, this, [this, playAction]() {
+        if (auto btn = dynamic_cast<QWidget*>(ui->mainToolBar->widgetForAction(playAction))) {
+            btn->setObjectName("playButton");
+            btn->style()->unpolish(btn);
+            btn->style()->polish(btn);
+        }
+    });
 }

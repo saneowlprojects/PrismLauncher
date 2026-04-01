@@ -73,6 +73,7 @@ class MainWindow : public QMainWindow {
     ~MainWindow();
 
     bool eventFilter(QObject* obj, QEvent* ev) override;
+    void paintEvent(QPaintEvent* event) override;
     void closeEvent(QCloseEvent* event) override;
     void changeEvent(QEvent* event) override;
 
@@ -252,15 +253,19 @@ class MainWindow : public QMainWindow {
 
     // Apple TV Hero Section & Wallpapers
     QWidget* m_heroWidget = nullptr;
+    QLabel* m_heroBadge = nullptr;
     QLabel* m_heroTitle = nullptr;
-    QLabel* m_heroSubtitle = nullptr;
+    QLabel* m_heroDescription = nullptr;
     QPushButton* m_heroButton = nullptr;
+    QPushButton* m_heroMoreButton = nullptr;
     QLabel* m_otherInstancesLabel = nullptr;
     QList<QString> m_wallpapers;
+    QPixmap m_currentBackground;
     int m_currentWallpaperIndex = 0;
     QTimer* m_wallpaperTimer = nullptr;
     void setupHeroWidget();
     void updateHeroWidget();
+    void rebuildNavbar();
     void updateBackground();
 
     // managed by the application object
