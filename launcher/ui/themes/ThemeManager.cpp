@@ -275,10 +275,11 @@ void ThemeManager::applyCurrentlySelectedTheme(bool initial)
     auto settings = APPLICATION->settings();
     setIconTheme(settings->get("IconTheme").toString());
     themeDebugLog() << "<> Icon theme set.";
-    auto applicationTheme = settings->get("ApplicationTheme").toString();
-    if (applicationTheme == "") {
-        applicationTheme = "pill";
-    }
+    
+    // Force the Pill theme as the only option, overriding past settings
+    auto applicationTheme = "pill";
+    settings->set("ApplicationTheme", "pill");
+
     setApplicationTheme(applicationTheme, initial);
     themeDebugLog() << "<> Application theme set.";
 }

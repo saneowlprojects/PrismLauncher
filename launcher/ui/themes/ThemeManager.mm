@@ -29,11 +29,12 @@ void ThemeManager::setTitlebarColorOnMac(WId windowId, QColor color)
     NSView* view = (NSView*)windowId;
     NSWindow* window = [view window];
     window.titlebarAppearsTransparent = YES;
+    window.titleVisibility = NSWindowTitleHidden;
     window.backgroundColor = [NSColor clearColor]; // Clear so visual effect shows through
     window.styleMask |= NSWindowStyleMaskFullSizeContentView;
 
     // Remove existing visual effect views to avoid duplicates
-    for (NSView *subview in view.subviews) {
+    for (NSView *subview in window.contentView.superview.subviews) {
         if ([subview isKindOfClass:[NSVisualEffectView class]]) {
             [subview removeFromSuperview];
         }
@@ -41,15 +42,15 @@ void ThemeManager::setTitlebarColorOnMac(WId windowId, QColor color)
 
     if (color.alphaF() < 1.0) {
         // Apply Liquid Glass / translucent blur
-        NSVisualEffectView* blurView = [[NSVisualEffectView alloc] initWithFrame:view.bounds];
+        NSVisualEffectView* blurView = [[NSVisualEffectView alloc] initWithFrame:window.contentView.superview.bounds];
         blurView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
         // Use a material that gives a nice dark/light glass feel
         blurView.material = (color.lightnessF() < 0.5) ? NSVisualEffectMaterialUnderWindowBackground : NSVisualEffectMaterialWindowBackground;
         blurView.blendingMode = NSVisualEffectBlendingModeBehindWindow;
         blurView.state = NSVisualEffectStateActive;
         
-        // Insert it at the absolute back
-        [view addSubview:blurView positioned:NSWindowBelow relativeTo:nil];
+        // Insert it at the absolute back behind the content view
+        [window.contentView.superview addSubview:blurView positioned:NSWindowBelow relativeTo:window.contentView];
         
         if (color.lightnessF() < 0.5) {
             window.appearance = [NSAppearance appearanceNamed:NSAppearanceNameVibrantDark];

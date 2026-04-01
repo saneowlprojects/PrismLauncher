@@ -23,8 +23,8 @@ PillTheme::PillTheme() {
 
     m_styleSheet = R"(
 /* Pill CSS */
-QMainWindow {
-    background-color: #1a1a1d;
+QMainWindow, QWidget#centralWidget, QScrollArea, QSplitter {
+    background: transparent;
 }
 
 /* The floating pill nav bar (assuming mainToolBar) */
@@ -92,10 +92,38 @@ QListView {
     padding: 20px;
 }
 
+QListView::item {
+    background-color: rgba(255, 255, 255, 10);
+    border-radius: 12px;
+    margin: 10px;
+    padding: 10px;
+}
+
+QListView::item:selected {
+    background-color: rgba(255, 255, 255, 40);
+    border: 2px solid rgba(255, 255, 255, 100);
+}
+
+QListView::item:hover {
+    background-color: rgba(255, 255, 255, 25);
+}
+
 /* Other toolbars to hide */
 QToolBar#instanceToolBar, QToolBar#newsToolBar {
+    max-height: 0px;
+    padding: 0px;
+    margin: 0px;
+    border: none;
+    background: transparent;
+}
+
+QToolBar#instanceToolBar *, QToolBar#newsToolBar * {
+    max-height: 0px;
+    color: transparent;
     background: transparent;
     border: none;
+    padding: 0px;
+    margin: 0px;
 }
 )";
 }
