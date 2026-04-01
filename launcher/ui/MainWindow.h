@@ -74,6 +74,7 @@ class MainWindow : public QMainWindow {
 
     bool eventFilter(QObject* obj, QEvent* ev) override;
     void paintEvent(QPaintEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
     void closeEvent(QCloseEvent* event) override;
     void changeEvent(QEvent* event) override;
 
@@ -261,6 +262,7 @@ class MainWindow : public QMainWindow {
     QLabel* m_otherInstancesLabel = nullptr;
     QList<QString> m_wallpapers;
     QPixmap m_currentBackground;
+    QPixmap m_scaledBackground;
     int m_currentWallpaperIndex = 0;
     QTimer* m_wallpaperTimer = nullptr;
     void setupHeroWidget();

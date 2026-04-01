@@ -1419,6 +1419,7 @@ void Application::performMainStartupAction()
             }
         }
     }
+}
 
     // initialize the updater
     if (updaterEnabled()) {

@@ -178,8 +178,12 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     }
 
     qDebug() << "MainWindow: Rebuilding Navbar";
+    m_otherInstancesLabel = new QLabel(tr("Other Instances"), this);
+    m_otherInstancesLabel->setObjectName("otherInstancesLabel");
+    m_otherInstancesLabel->setStyleSheet("font-size: 30px; font-weight: bold; color: white; margin-top: 45px; margin-bottom: 20px;");
+    m_otherInstancesLabel->setVisible(false);
+
     this->rebuildNavbar();
-    qDebug() << "MainWindow: Navbar rebuilt";
 
     // instance toolbar stuff
     {
@@ -1551,6 +1555,14 @@ void MainWindow::changeEvent(QEvent* event)
     QMainWindow::changeEvent(event);
 }
 
+void MainWindow::resizeEvent(QResizeEvent* event)
+{
+    if (!m_currentBackground.isNull()) {
+        m_scaledBackground = m_currentBackground.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+    }
+    QMainWindow::resizeEvent(event);
+}
+
 void MainWindow::instanceActivated(QModelIndex index)
 {
     if (!index.isValid())
@@ -1821,8 +1833,9 @@ void MainWindow::setupHeroWidget() {
 
 void MainWindow::updateBackground() {
     if (APPLICATION->settings()->get("ApplicationTheme").toString() != "pill") {
-        m_wallpaperTimer->stop();
+        if (m_wallpaperTimer) m_wallpaperTimer->stop();
         m_currentBackground = QPixmap();
+        m_scaledBackground = QPixmap();
         update();
         return;
     }
@@ -1832,15 +1845,17 @@ void MainWindow::updateBackground() {
     QString bgPath = m_wallpapers[m_currentWallpaperIndex];
     m_currentWallpaperIndex = (m_currentWallpaperIndex + 1) % m_wallpapers.size();
     
-    m_currentBackground.load(bgPath);
+    if (m_currentBackground.load(bgPath)) {
+        m_scaledBackground = m_currentBackground.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+    }
     update();
 }
 
 void MainWindow::paintEvent(QPaintEvent* event) {
-    if (!m_currentBackground.isNull()) {
+    if (!m_scaledBackground.isNull()) {
         QPainter painter(this);
         painter.setRenderHint(QPainter::SmoothPixmapTransform);
-        painter.drawPixmap(rect(), m_currentBackground.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation));
+        painter.drawPixmap(rect(), m_scaledBackground);
         
         // Dynamic darkness overlay for readability
         painter.fillRect(rect(), QColor(0, 0, 0, 80));
@@ -1852,27 +1867,61 @@ void MainWindow::updateHeroWidget() {
     bool isPill = APPLICATION->settings()->get("ApplicationTheme").toString() == "pill";
     if (m_heroWidget) m_heroWidget->setVisible(isPill);
     if (m_otherInstancesLabel) m_otherInstancesLabel->setVisible(isPill);
-    if (!isPill) return;
+    
+    if (isPill) {
+        if (m_wallpaperTimer && !m_wallpaperTimer->isActive()) {
+            m_wallpaperTimer->start(15000);
+            updateBackground();
+        }
+    } else {
+        return;
+    }
 
     if (!m_heroTitle || !m_heroButton) return;
     if (m_selectedInstance) {
-        m_heroTitle->setText("Resume Play");
+        m_heroTitle->setText(tr("Resume Play"));
         
-        // Mockup style metadata: TYPE • COUNT mods
+        int modCount = 0;
+        QString version = "Unknown";
+        auto minecraftInst = dynamic_cast<MinecraftInstance*>(m_selectedInstance);
+        if (minecraftInst) {
+            if (auto modList = minecraftInst->loaderModList()) {
+                for (auto* mod : modList->allResources()) {
+                    if (mod && mod->isEnabled()) modCount++;
+                }
+            }
+            version = minecraftInst->getPackProfile()->getComponentVersion("net.minecraft");
+        }
+
+        // Badge: TYPE • [N] mods
         QString type = "MODPACK";
-        if (m_selectedInstance->instanceType() == "Vanilla") type = "VANILLA";
+        if (modCount == 0) type = "VANILLA";
+        if (m_selectedInstance->instanceType() == "Legacy") type = "LEGACY";
         
-        m_heroBadge->setText(QString("%1 • %2").arg(type).arg(m_selectedInstance->name()));
-        m_heroDescription->setText(QString("Continue your adventure in %1. Last played %2 hours ago.")
+        m_heroBadge->setText(QString("%1 • %2 MODS").arg(type).arg(modCount));
+        
+        // Last played relative time
+        qint64 lastLaunch = m_selectedInstance->lastLaunch();
+        QString timeStr = tr("never");
+        if (lastLaunch > 0) {
+            qint64 diff = QDateTime::currentMSecsSinceEpoch() - lastLaunch;
+            if (diff < 60000) timeStr = tr("just now");
+            else if (diff < 3600000) timeStr = tr("%1 minutes ago").arg(diff / 60000);
+            else if (diff < 86400000) timeStr = tr("%1 hours ago").arg(diff / 3600000);
+            else timeStr = tr("%1 days ago").arg(diff / 86400000);
+        }
+
+        m_heroDescription->setText(QString("Continue your adventure in %1 %2. Last played %3.")
             .arg(m_selectedInstance->name())
-            .arg(2)); // Placeholder '2' as per mockup
+            .arg(version)
+            .arg(timeStr));
             
         m_heroButton->setEnabled(true);
         m_heroMoreButton->setVisible(true);
     } else {
         m_heroTitle->setText(tr("Prism Launcher"));
         m_heroBadge->setText(tr("NO SELECTION"));
-        m_heroDescription->setText("Select an instance below to view details.");
+        m_heroDescription->setText(tr("Select an instance below to view details."));
         m_heroButton->setEnabled(false);
         m_heroMoreButton->setVisible(false);
     }
@@ -1886,10 +1935,43 @@ void MainWindow::rebuildNavbar() {
     bool isPill = APPLICATION->settings()->get("ApplicationTheme").toString() == "pill";
     
     if (!isPill) {
+        // Restore default transparency
+        this->setAttribute(Qt::WA_TranslucentBackground, false);
+        this->setAttribute(Qt::WA_NoSystemBackground, false);
+        if (this->centralWidget()) {
+            this->centralWidget()->setAttribute(Qt::WA_TranslucentBackground, false);
+            this->centralWidget()->setAutoFillBackground(true);
+        }
+
+        // Restore toolbars to QMainWindow areas
+        this->addToolBar(Qt::TopToolBarArea, ui->mainToolBar);
+        this->addToolBar(Qt::RightToolBarArea, ui->instanceToolBar);
+        this->addToolBar(Qt::BottomToolBarArea, ui->newsToolBar);
+
+        // Restore original mainToolBar actions
+        ui->mainToolBar->clear();
+        ui->mainToolBar->addAction(ui->actionAddInstance);
+        ui->mainToolBar->addSeparator();
+        ui->mainToolBar->addAction(ui->actionFoldersButton);
+        ui->mainToolBar->addAction(ui->actionSettings);
+        ui->mainToolBar->addSeparator();
+        ui->mainToolBar->addAction(ui->actionHelpButton);
+        
+        // Add spacer and accounts button
+        QWidget* spacer = new QWidget();
+        spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        ui->mainToolBar->addWidget(spacer);
+        ui->mainToolBar->addAction(ui->actionAccountsButton);
+
+        ui->mainToolBar->setMovable(true);
+        ui->mainToolBar->setOrientation(Qt::Horizontal);
+        
         if (ui->mainToolBar) ui->mainToolBar->show();
         if (ui->instanceToolBar) ui->instanceToolBar->show();
         if (ui->newsToolBar) ui->newsToolBar->show();
         if (statusBar()) statusBar()->show();
+
+        updateMainToolBar();
         return;
     }
 
@@ -1911,6 +1993,10 @@ void MainWindow::rebuildNavbar() {
         connect(playAction, &QAction::triggered, this, &MainWindow::on_actionLaunchInstance_triggered);
         
         auto instancesAction = ui->mainToolBar->addAction("Instances");
+        connect(instancesAction, &QAction::triggered, this, [this]() {
+            if (view) view->setFocus();
+        });
+
         auto addAction = ui->mainToolBar->addAction("Add Instance");
         connect(addAction, &QAction::triggered, this, &MainWindow::on_actionAddInstance_triggered);
         
