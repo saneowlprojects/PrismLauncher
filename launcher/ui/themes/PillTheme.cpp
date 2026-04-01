@@ -29,32 +29,35 @@ QMainWindow, QWidget#centralWidget, QScrollArea, QSplitter {
 
 /* The floating pill nav bar (assuming mainToolBar) */
 QToolBar#mainToolBar {
-    background-color: rgba(60, 60, 65, 120);
-    border-radius: 20px;
-    margin-top: 40px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 8px 16px;
-    spacing: 20px;
+    background-color: rgba(30, 30, 35, 180);
+    border-radius: 30px;
+    margin-top: 50px;
+    margin-bottom: 20px;
+    padding: 6px 12px;
+    spacing: 10px;
     border: 1px solid rgba(255, 255, 255, 30);
-    max-width: 600px; /* Force it to look pill-shaped and not stretch entirely */
 }
 
-/* On Mac, the toolbar will be pushed down. We want it floating. */
+/* Specific centering for the toolbar if it's in a layout */
+QWidget#centralWidget > QToolBar#mainToolBar {
+    margin-left: 100px;
+    margin-right: 100px;
+}
+
 QToolBar#mainToolBar::separator {
-    background-color: rgba(255, 255, 255, 30);
+    background-color: rgba(255, 255, 255, 40);
     width: 1px;
-    margin: 4px 10px;
+    margin: 10px 12px;
 }
 
 QToolBar#mainToolBar QToolButton {
     background: transparent;
-    color: rgba(255, 255, 255, 200);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    padding: 8px 16px;
-    border-radius: 12px;
+    color: rgba(255, 255, 255, 180);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 12px 28px;
+    border-radius: 24px;
 }
 
 QToolBar#mainToolBar QToolButton:hover {
@@ -63,100 +66,85 @@ QToolBar#mainToolBar QToolButton:hover {
 }
 
 QToolBar#mainToolBar QToolButton:checked, QToolBar#mainToolBar QToolButton:pressed {
-    background-color: rgba(255, 255, 255, 255);
+    background-color: white;
     color: black;
 }
 
 /* Menus */
 QMenu {
-    background-color: rgba(40, 40, 45, 240);
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 20);
+    background-color: rgba(25, 25, 30, 250);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 30);
     color: white;
-    padding: 6px;
+    padding: 8px;
 }
 QMenu::item {
-    padding: 6px 16px;
-    border-radius: 8px;
+    padding: 8px 20px;
+    border-radius: 10px;
 }
 QMenu::item:selected {
-    background-color: rgba(255, 255, 255, 40);
+    background-color: rgba(255, 255, 255, 50);
     color: white;
 }
 
 /* Instance View / Cards */
 QListView {
-    background: transparent;
+    background-color: transparent !important;
+    background: transparent !important;
     border: none;
     outline: none;
-    padding: 20px;
+    padding: 40px;
 }
 
+/* Grid drawing is handled by InstanceDelegate, so minimal CSS here */
 QListView::item {
-    background-color: rgba(255, 255, 255, 15);
-    border: 1px solid rgba(255, 255, 255, 10);
-    border-radius: 12px;
-    margin: 8px;
-    padding: 12px;
-}
-
-QListView::item:selected {
-    background-color: rgba(255, 255, 255, 255);
-    color: black;
-    border: 2px solid white;
-}
-
-QListView::item:hover {
-    background-color: rgba(255, 255, 255, 40);
-    border: 1px solid rgba(255, 255, 255, 60);
+    margin-right: 20px;
+    margin-bottom: 20px;
 }
 
 /* Hero Section */
 QWidget#heroWidget {
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 transparent, stop:0.7 rgba(0,0,0,0), stop:1 rgba(0,0,0,100));
+    background: qlineargradient(x1:0, y1:0, x2:0.6, y2:0, stop:0 rgba(0,0,0,160), stop:1 transparent);
 }
 
 QLabel#heroTitle {
     color: white;
-    font-size: 64px;
-    font-weight: 700;
-    margin-bottom: 5px;
-    /* Basic drop shadow for contrast */
+    font-size: 110px;
+    font-weight: 800;
+    margin-bottom: 0px;
+    letter-spacing: -2px;
+    background: transparent;
 }
 
 QLabel#heroSubtitle {
-    color: rgba(255, 255, 255, 200);
-    font-size: 24px;
-    font-weight: 400;
-    margin-bottom: 20px;
+    color: rgba(255, 255, 255, 220);
+    font-size: 36px;
+    font-weight: 500;
+    margin-bottom: 30px;
+    background: transparent;
 }
 
 QPushButton#heroButton {
     background-color: white;
     color: black;
-    border-radius: 20px;
-    padding: 12px 32px;
-    font-weight: 600;
-    font-size: 18px;
-    max-width: 150px;
+    border-radius: 12px;
+    padding: 18px 45px;
+    font-weight: 700;
+    font-size: 22px;
+    min-width: 160px;
 }
 
 QPushButton#heroButton:hover {
-    background-color: rgba(255, 255, 255, 0.8);
-}
-
-QPushButton#heroButton:disabled {
-    background-color: rgba(255, 255, 255, 0.4);
-    color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(255, 255, 255, 0.9);
 }
 
 QLabel#otherInstancesLabel {
     color: white;
-    font-size: 24px;
-    font-weight: 600;
-    margin-left: 40px;
-    margin-top: 20px;
-    margin-bottom: 10px;
+    font-size: 32px;
+    font-weight: 700;
+    margin-left: 60px;
+    margin-top: 40px;
+    margin-bottom: 20px;
 }
 
 /* Other toolbars to hide */

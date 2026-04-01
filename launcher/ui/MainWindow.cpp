@@ -157,12 +157,17 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     setAccessibleName(BuildConfig.LAUNCHER_DISPLAYNAME);
 #endif
 
+    // strictly float and center the main toolbar horizontally
+    removeToolBar(ui->mainToolBar);
+    ui->mainToolBar->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    ui->mainLayout->insertWidget(0, ui->mainToolBar);
+    ui->mainLayout->setAlignment(ui->mainToolBar, Qt::AlignHCenter | Qt::AlignTop);
+
     // instance toolbar stuff
     {
         // Qt doesn't like vertical moving toolbars, so we have to force them...
         // See https://github.com/PolyMC/PolyMC/issues/493
-        connect(ui->instanceToolBar, &QToolBar::orientationChanged,
-                [this](Qt::Orientation) { ui->instanceToolBar->setOrientation(Qt::Vertical); });
+        // (Removing orientation connect as it's now managed)
 
         // if you try to add a widget to a toolbar in a .ui file
         // qt designer will delete it when you save the file >:(
@@ -302,10 +307,21 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         view = new InstanceView(ui->centralWidget);
 
         view->setSelectionMode(QAbstractItemView::SingleSelection);
-        // FIXME: leaks ListViewDelegate
+        view->setViewMode(QListView::IconMode);
+        view->setFlow(QListView::LeftToRight);
+        view->setMovement(QListView::Static);
+        view->setResizeMode(QListView::Adjust);
+        view->setWrapping(true);
+        view->setWordWrap(true);
+        view->setSpacing(40);
+        view->setContentsMargins(60, 20, 60, 20);
+        
         auto delegate = new ListViewDelegate(this);
         view->setItemDelegate(delegate);
         view->setFrameShape(QFrame::NoFrame);
+        view->viewport()->setAutoFillBackground(false);
+        view->setAutoFillBackground(false);
+        view->setAttribute(Qt::WA_TranslucentBackground);
         // do not show ugly blue border on the mac
         view->setAttribute(Qt::WA_MacShowFocusRect, false);
         connect(delegate, &ListViewDelegate::textChanged, this, [this](QString before, QString after) {
@@ -341,7 +357,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         connect(view, &InstanceView::groupStateChanged, APPLICATION->instances(), &InstanceList::on_GroupStateChanged);
         m_otherInstancesLabel = new QLabel(tr("Other Instances"), this);
         m_otherInstancesLabel->setObjectName("otherInstancesLabel");
+        m_otherInstancesLabel->setContentsMargins(80, 20, 0, 10);
         ui->mainLayout->addWidget(m_otherInstancesLabel);
+        ui->mainLayout->setAlignment(m_otherInstancesLabel, Qt::AlignLeft);
         ui->mainLayout->addWidget(view);
     }
     // The cat background
@@ -1742,14 +1760,14 @@ void MainWindow::setupHeroWidget() {
     heroLayout->addWidget(m_heroTitle);
     heroLayout->addWidget(m_heroSubtitle);
     heroLayout->addWidget(m_heroButton);
-    heroLayout->setAlignment(Qt::AlignBottom | Qt::AlignLeft);
-    heroLayout->setContentsMargins(40, 40, 40, 40);
+    heroLayout->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    heroLayout->setContentsMargins(80, 0, 40, 0);
     
     m_heroWidget->setMinimumHeight(350);
     
     ui->mainLayout->insertWidget(0, m_heroWidget);
     
-    QDir bgDir(":/backgrounds");
+    QDir bgDir(APPLICATION->root() + "/backgrounds");
     for (const auto& file : bgDir.entryList(QDir::Files)) {
         if (file.endsWith(".png") || file.endsWith(".jpg")) {
             m_wallpapers.append(bgDir.absoluteFilePath(file));
