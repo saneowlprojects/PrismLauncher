@@ -355,9 +355,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         m_otherInstancesLabel = new QLabel(tr("Other Instances"), this);
         m_otherInstancesLabel->setObjectName("otherInstancesLabel");
         m_otherInstancesLabel->setContentsMargins(80, 20, 0, 10);
-        ui->mainLayout->addWidget(m_otherInstancesLabel);
-        ui->mainLayout->setAlignment(m_otherInstancesLabel, Qt::AlignLeft);
-        ui->mainLayout->addWidget(view);
+        this->centralWidget()->layout()->addWidget(m_otherInstancesLabel);
+        this->centralWidget()->layout()->setAlignment(m_otherInstancesLabel, Qt::AlignLeft);
+        this->centralWidget()->layout()->addWidget(view);
     }
     // The cat background
     {
@@ -1781,7 +1781,9 @@ void MainWindow::setupHeroWidget() {
     
     m_heroWidget->setMinimumHeight(350);
     
-    ui->mainLayout->insertWidget(0, m_heroWidget);
+    if (auto layout = qobject_cast<QVBoxLayout*>(this->centralWidget()->layout())) {
+        layout->insertWidget(0, m_heroWidget);
+    }
     
     QDir bgDir(APPLICATION->root() + "/backgrounds");
     for (const auto& file : bgDir.entryList(QDir::Files)) {
@@ -1899,14 +1901,22 @@ void MainWindow::rebuildNavbar() {
     ui->mainToolBar->setFloatable(false);
     ui->mainToolBar->setOrientation(Qt::Horizontal);
     ui->mainToolBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    ui->mainLayout->insertWidget(0, ui->mainToolBar);
-    ui->mainLayout->setAlignment(ui->mainToolBar, Qt::AlignHCenter | Qt::AlignTop);
+    if (auto layout = qobject_cast<QVBoxLayout*>(this->centralWidget()->layout())) {
+        layout->insertWidget(0, ui->mainToolBar);
+        layout->setAlignment(ui->mainToolBar, Qt::AlignHCenter | Qt::AlignTop);
+    }
 
-    QTimer::singleShot(100, this, [this, playAction]() {
-        if (auto btn = dynamic_cast<QWidget*>(ui->mainToolBar->widgetForAction(playAction))) {
-            btn->setObjectName("playButton");
-            btn->style()->unpolish(btn);
-            btn->style()->polish(btn);
+    // Target the 'Play' button for the white pill style
+    QTimer::singleShot(100, this, [this]() {
+        for (auto* action : ui->mainToolBar->actions()) {
+            if (action->text() == "Play") {
+                if (auto btn = dynamic_cast<QWidget*>(ui->mainToolBar->widgetForAction(action))) {
+                    btn->setObjectName("playButton");
+                    btn->style()->unpolish(btn);
+                    btn->style()->polish(btn);
+                }
+                break;
+            }
         }
     });
 }
