@@ -250,6 +250,19 @@ class MainWindow : public QMainWindow {
     BaseInstance* m_selectedInstance = nullptr;
     QString m_currentInstIcon;
 
+    // Apple TV Hero Section & Wallpapers
+    QWidget* m_heroWidget = nullptr;
+    QLabel* m_heroTitle = nullptr;
+    QLabel* m_heroSubtitle = nullptr;
+    QPushButton* m_heroButton = nullptr;
+    QLabel* m_otherInstancesLabel = nullptr;
+    QList<QString> m_wallpapers;
+    int m_currentWallpaperIndex = 0;
+    QTimer* m_wallpaperTimer = nullptr;
+    void setupHeroWidget();
+    void updateHeroWidget();
+    void updateBackground();
+
     // managed by the application object
     Task* m_versionLoadTask = nullptr;
 };

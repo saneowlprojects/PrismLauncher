@@ -45,6 +45,9 @@
 
 #include "DataMigrationTask.h"
 #include "java/JavaInstallList.h"
+#include "meta/Index.h"
+#include "meta/VersionList.h"
+#include "minecraft/VanillaInstanceCreationTask.h"
 #include "net/PasteUpload.h"
 #include "tasks/Task.h"
 #include "tools/GenericProfiler.h"
@@ -1367,6 +1370,45 @@ void Application::performMainStartupAction()
         // normal main window
         showMainWindow(false);
         qDebug() << "<> Main window shown.";
+        
+        if (m_instances->count() == 0) {
+            qDebug() << "No instances found. Auto-installing the latest Minecraft release.";
+            auto vlist = metadataIndex()->get("net.minecraft");
+            if (vlist) {
+                if (vlist->isLoaded()) {
+                    auto latest = vlist->getRecommended();
+                    if (latest) {
+                        auto task = new VanillaCreationTask(latest);
+                        InstanceName inst_name("Latest Release", latest->descriptor());
+                        task->setName(inst_name);
+                        task->setGroup("Minecraft");
+                        task->setIcon("default");
+                        auto wrapper = instances()->wrapInstanceTask(task);
+                        connect(wrapper, &Task::finished, wrapper, &QObject::deleteLater);
+                        wrapper->start();
+                    }
+                } else {
+                    auto loadTaskHolder = new std::shared_ptr<Task>(vlist->getLoadTask());
+                    connect(loadTaskHolder->get(), &Task::succeeded, this, [this, vlist]() {
+                        auto latest = vlist->getRecommended();
+                        if (latest) {
+                            auto task = new VanillaCreationTask(latest);
+                            InstanceName inst_name("Latest Release", latest->descriptor());
+                            task->setName(inst_name);
+                            task->setGroup("Minecraft");
+                            task->setIcon("default");
+                            auto wrapper = instances()->wrapInstanceTask(task);
+                            connect(wrapper, &Task::finished, wrapper, &QObject::deleteLater);
+                            wrapper->start();
+                        }
+                    });
+                    connect(loadTaskHolder->get(), &Task::finished, this, [loadTaskHolder]() {
+                        delete loadTaskHolder;
+                    });
+                    (*loadTaskHolder)->start();
+                }
+            }
+        }
     }
 
     // initialize the updater

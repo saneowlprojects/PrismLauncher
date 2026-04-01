@@ -56,10 +56,13 @@
 #include <QButtonGroup>
 #include <QFileDialog>
 #include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QHeaderView>
 #include <QInputDialog>
 #include <QKeyEvent>
 #include <QLabel>
+#include <QGraphicsDropShadowEffect>
+#include <QPushButton>
 #include <QMainWindow>
 #include <QMenu>
 #include <QMenuBar>
@@ -330,7 +333,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         view->setSourceOfGroupCollapseStatus(
             [](const QString& groupName) -> bool { return APPLICATION->instances()->isGroupCollapsed(groupName); });
         connect(view, &InstanceView::groupStateChanged, APPLICATION->instances(), &InstanceList::on_GroupStateChanged);
-        ui->horizontalLayout->addWidget(view);
+        m_otherInstancesLabel = new QLabel(tr("Other Instances"), this);
+        m_otherInstancesLabel->setObjectName("otherInstancesLabel");
+        ui->mainLayout->addWidget(m_otherInstancesLabel);
+        ui->mainLayout->addWidget(view);
     }
     // The cat background
     {
@@ -424,6 +430,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     }
 
     connect(ui->actionUndoTrashInstance, &QAction::triggered, this, &MainWindow::undoTrashInstance);
+
+    setupHeroWidget();
 
     setSelectedInstanceById(APPLICATION->settings()->get("SelectedInstance").toString());
 
@@ -1564,6 +1572,7 @@ void MainWindow::instanceChanged(const QModelIndex& current, [[maybe_unused]] co
     if (!current.isValid()) {
         APPLICATION->settings()->set("SelectedInstance", QString());
         selectionBad();
+        updateHeroWidget();
         return;
     }
     if (m_selectedInstance) {
@@ -1590,9 +1599,11 @@ void MainWindow::instanceChanged(const QModelIndex& current, [[maybe_unused]] co
 
         connect(m_selectedInstance, &BaseInstance::runningStatusChanged, this, &MainWindow::refreshCurrentInstance);
         connect(m_selectedInstance, &BaseInstance::profilerChanged, this, &MainWindow::refreshCurrentInstance);
+        updateHeroWidget();
     } else {
         APPLICATION->settings()->set("SelectedInstance", QString());
         selectionBad();
+        updateHeroWidget();
         return;
     }
 }
@@ -1687,6 +1698,83 @@ void MainWindow::setInstanceActionsEnabled(bool enabled)
 
 void MainWindow::refreshCurrentInstance()
 {
-    auto current = view->selectionModel()->currentIndex();
-    instanceChanged(current, current);
+    instanceChanged(view->selectionModel()->currentIndex(), view->selectionModel()->currentIndex());
+}
+
+void MainWindow::setupHeroWidget() {
+    m_heroWidget = new QWidget(this);
+    m_heroWidget->setObjectName("heroWidget");
+    auto heroLayout = new QVBoxLayout(m_heroWidget);
+    
+    m_heroTitle = new QLabel("Resume Play", m_heroWidget);
+    m_heroTitle->setObjectName("heroTitle");
+    
+    m_heroSubtitle = new QLabel("No instance selected", m_heroWidget);
+    m_heroSubtitle->setObjectName("heroSubtitle");
+    
+    auto effect1 = new QGraphicsDropShadowEffect(m_heroTitle);
+    effect1->setBlurRadius(15);
+    effect1->setColor(QColor(0, 0, 0, 200));
+    effect1->setOffset(0, 2);
+    m_heroTitle->setGraphicsEffect(effect1);
+
+    auto effect2 = new QGraphicsDropShadowEffect(m_heroSubtitle);
+    effect2->setBlurRadius(15);
+    effect2->setColor(QColor(0, 0, 0, 200));
+    effect2->setOffset(0, 2);
+    m_heroSubtitle->setGraphicsEffect(effect2);
+    
+    m_heroButton = new QPushButton("Play", m_heroWidget);
+    m_heroButton->setObjectName("heroButton");
+    connect(m_heroButton, &QPushButton::clicked, this, [this]() {
+        if (m_selectedInstance) {
+            activateInstance(m_selectedInstance);
+        }
+    });
+
+    heroLayout->addStretch(1);
+    heroLayout->addWidget(m_heroTitle);
+    heroLayout->addWidget(m_heroSubtitle);
+    heroLayout->addWidget(m_heroButton);
+    heroLayout->setAlignment(Qt::AlignBottom | Qt::AlignLeft);
+    heroLayout->setContentsMargins(40, 40, 40, 40);
+    
+    m_heroWidget->setMinimumHeight(350);
+    
+    ui->mainLayout->insertWidget(0, m_heroWidget);
+    
+    QDir bgDir(":/backgrounds");
+    for (const auto& file : bgDir.entryList(QDir::Files)) {
+        if (file.endsWith(".png") || file.endsWith(".jpg")) {
+            m_wallpapers.append(bgDir.absoluteFilePath(file));
+        }
+    }
+    
+    if (!m_wallpapers.isEmpty()) {
+        m_wallpaperTimer = new QTimer(this);
+        connect(m_wallpaperTimer, &QTimer::timeout, this, &MainWindow::updateBackground);
+        m_wallpaperTimer->start(15000);
+        updateBackground();
+    }
+}
+
+void MainWindow::updateBackground() {
+    if (m_wallpapers.isEmpty()) return;
+    
+    QString bgPath = m_wallpapers[m_currentWallpaperIndex];
+    m_currentWallpaperIndex = (m_currentWallpaperIndex + 1) % m_wallpapers.size();
+    
+    QString style = QString("QMainWindow { background-image: url('%1'); background-position: center; background-repeat: no-repeat; }").arg(bgPath);
+    this->setStyleSheet(style);
+}
+
+void MainWindow::updateHeroWidget() {
+    if (!m_heroSubtitle || !m_heroButton) return;
+    if (m_selectedInstance) {
+        m_heroSubtitle->setText(m_selectedInstance->name());
+        m_heroButton->setEnabled(true);
+    } else {
+        m_heroSubtitle->setText(tr("No instance selected"));
+        m_heroButton->setEnabled(false);
+    }
 }

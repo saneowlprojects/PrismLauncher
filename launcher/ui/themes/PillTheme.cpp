@@ -93,19 +93,70 @@ QListView {
 }
 
 QListView::item {
-    background-color: rgba(255, 255, 255, 10);
+    background-color: rgba(255, 255, 255, 15);
+    border: 1px solid rgba(255, 255, 255, 10);
     border-radius: 12px;
-    margin: 10px;
-    padding: 10px;
+    margin: 8px;
+    padding: 12px;
 }
 
 QListView::item:selected {
-    background-color: rgba(255, 255, 255, 40);
-    border: 2px solid rgba(255, 255, 255, 100);
+    background-color: rgba(255, 255, 255, 255);
+    color: black;
+    border: 2px solid white;
 }
 
 QListView::item:hover {
-    background-color: rgba(255, 255, 255, 25);
+    background-color: rgba(255, 255, 255, 40);
+    border: 1px solid rgba(255, 255, 255, 60);
+}
+
+/* Hero Section */
+QWidget#heroWidget {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 transparent, stop:0.7 rgba(0,0,0,0), stop:1 rgba(0,0,0,100));
+}
+
+QLabel#heroTitle {
+    color: white;
+    font-size: 64px;
+    font-weight: 700;
+    margin-bottom: 5px;
+    /* Basic drop shadow for contrast */
+}
+
+QLabel#heroSubtitle {
+    color: rgba(255, 255, 255, 200);
+    font-size: 24px;
+    font-weight: 400;
+    margin-bottom: 20px;
+}
+
+QPushButton#heroButton {
+    background-color: white;
+    color: black;
+    border-radius: 20px;
+    padding: 12px 32px;
+    font-weight: 600;
+    font-size: 18px;
+    max-width: 150px;
+}
+
+QPushButton#heroButton:hover {
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+QPushButton#heroButton:disabled {
+    background-color: rgba(255, 255, 255, 0.4);
+    color: rgba(0, 0, 0, 0.5);
+}
+
+QLabel#otherInstancesLabel {
+    color: white;
+    font-size: 24px;
+    font-weight: 600;
+    margin-left: 40px;
+    margin-top: 20px;
+    margin-bottom: 10px;
 }
 
 /* Other toolbars to hide */
