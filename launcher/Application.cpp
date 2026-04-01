@@ -1371,9 +1371,10 @@ void Application::performMainStartupAction()
         showMainWindow(false);
         qDebug() << "<> Main window shown.";
         
-        if (m_instances->count() == 0) {
+        if (m_instances && m_instances->count() == 0) {
             qDebug() << "No instances found. Auto-installing the latest Minecraft release.";
-            auto vlist = metadataIndex()->get("net.minecraft");
+            if (metadataIndex()) {
+                auto vlist = metadataIndex()->get("net.minecraft");
             if (vlist) {
                 if (vlist->isLoaded()) {
                     auto latest = vlist->getRecommended();
@@ -1709,9 +1710,13 @@ MainWindow* Application::showMainWindow(bool minimized)
         m_mainWindow->raise();
         m_mainWindow->activateWindow();
     } else {
+        qDebug() << "Application: creating MainWindow...";
         m_mainWindow = new MainWindow();
+        qDebug() << "Application: MainWindow created, restoring state...";
         m_mainWindow->restoreState(QByteArray::fromBase64(APPLICATION->settings()->get("MainWindowState").toString().toUtf8()));
+        qDebug() << "Application: state restored, restoring geometry...";
         m_mainWindow->restoreGeometry(QByteArray::fromBase64(APPLICATION->settings()->get("MainWindowGeometry").toString().toUtf8()));
+        qDebug() << "Application: geometry restored.";
 
         if (minimized) {
             m_mainWindow->showMinimized();

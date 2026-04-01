@@ -153,17 +153,33 @@ QString profileInUseFilter(const QString& profile, bool used)
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
+    qDebug() << "MainWindow: ENTERING CONSTRUCTOR";
     ui->setupUi(this);
+    qDebug() << "MainWindow: setupUi completed";
+
+    if (!APPLICATION) {
+        qCritical() << "MainWindow: APPLICATION IS NULL!";
+        return;
+    }
 
     setWindowIcon(APPLICATION->logo());
-    setWindowTitle(APPLICATION->applicationDisplayName());
+    if (APPLICATION->settings()) {
+        setWindowTitle(APPLICATION->applicationDisplayName());
+    }
 #ifndef QT_NO_ACCESSIBILITY
     setAccessibleName(BuildConfig.LAUNCHER_DISPLAYNAME);
 #endif
 
     statusBar()->hide();
 
+    if (!this->centralWidget()->layout()) {
+        qDebug() << "MainWindow: Creating missing central layout";
+        this->centralWidget()->setLayout(new QVBoxLayout(this->centralWidget()));
+    }
+
+    qDebug() << "MainWindow: Rebuilding Navbar";
     this->rebuildNavbar();
+    qDebug() << "MainWindow: Navbar rebuilt";
 
     // instance toolbar stuff
     {
@@ -352,12 +368,15 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         view->setSourceOfGroupCollapseStatus(
             [](const QString& groupName) -> bool { return APPLICATION->instances()->isGroupCollapsed(groupName); });
         connect(view, &InstanceView::groupStateChanged, APPLICATION->instances(), &InstanceList::on_GroupStateChanged);
-        m_otherInstancesLabel = new QLabel(tr("Other Instances"), this);
-        m_otherInstancesLabel->setObjectName("otherInstancesLabel");
-        m_otherInstancesLabel->setContentsMargins(80, 20, 0, 10);
-        this->centralWidget()->layout()->addWidget(m_otherInstancesLabel);
-        this->centralWidget()->layout()->setAlignment(m_otherInstancesLabel, Qt::AlignLeft);
-        this->centralWidget()->layout()->addWidget(view);
+        qDebug() << "MainWindow: Setting up instance view layout";
+        if (auto layout = this->centralWidget()->layout()) {
+            layout->addWidget(m_otherInstancesLabel);
+            layout->setAlignment(m_otherInstancesLabel, Qt::AlignLeft);
+            layout->addWidget(view);
+        } else {
+            qWarning() << "MainWindow: Layout still null in setupView";
+        }
+        qDebug() << "MainWindow: Instance view setup completed";
     }
     // The cat background
     {
@@ -1860,13 +1879,17 @@ void MainWindow::updateHeroWidget() {
 }
 
 void MainWindow::rebuildNavbar() {
+    if (!APPLICATION || !APPLICATION->settings() || !ui) {
+        return;
+    }
+
     bool isPill = APPLICATION->settings()->get("ApplicationTheme").toString() == "pill";
     
     if (!isPill) {
-        ui->mainToolBar->show();
-        ui->instanceToolBar->show();
-        ui->newsToolBar->show();
-        statusBar()->show();
+        if (ui->mainToolBar) ui->mainToolBar->show();
+        if (ui->instanceToolBar) ui->instanceToolBar->show();
+        if (ui->newsToolBar) ui->newsToolBar->show();
+        if (statusBar()) statusBar()->show();
         return;
     }
 
@@ -1877,46 +1900,52 @@ void MainWindow::rebuildNavbar() {
         this->centralWidget()->setAutoFillBackground(false);
     }
     
-    ui->instanceToolBar->hide();
-    ui->newsToolBar->hide();
-    statusBar()->hide();
+    if (ui->instanceToolBar) ui->instanceToolBar->hide();
+    if (ui->newsToolBar) ui->newsToolBar->hide();
+    if (statusBar()) statusBar()->hide();
     
-    ui->mainToolBar->clear();
-    
-    auto playAction = ui->mainToolBar->addAction("Play");
-    connect(playAction, &QAction::triggered, this, &MainWindow::on_actionLaunchInstance_triggered);
-    
-    auto instancesAction = ui->mainToolBar->addAction("Instances");
-    auto addAction = ui->mainToolBar->addAction("Add Instance");
-    connect(addAction, &QAction::triggered, this, &MainWindow::on_actionAddInstance_triggered);
-    
-    auto modsAction = ui->mainToolBar->addAction("Mods");
-    connect(modsAction, &QAction::triggered, this, &MainWindow::on_actionViewCentralModsFolder_triggered);
-    
-    auto settingsAction = ui->mainToolBar->addAction("Settings");
-    connect(settingsAction, &QAction::triggered, this, &MainWindow::on_actionSettings_triggered);
+    if (ui->mainToolBar) {
+        ui->mainToolBar->clear();
+        
+        auto playAction = ui->mainToolBar->addAction("Play");
+        connect(playAction, &QAction::triggered, this, &MainWindow::on_actionLaunchInstance_triggered);
+        
+        auto instancesAction = ui->mainToolBar->addAction("Instances");
+        auto addAction = ui->mainToolBar->addAction("Add Instance");
+        connect(addAction, &QAction::triggered, this, &MainWindow::on_actionAddInstance_triggered);
+        
+        auto modsAction = ui->mainToolBar->addAction("Mods");
+        connect(modsAction, &QAction::triggered, this, &MainWindow::on_actionViewCentralModsFolder_triggered);
+        
+        auto settingsAction = ui->mainToolBar->addAction("Settings");
+        connect(settingsAction, &QAction::triggered, this, &MainWindow::on_actionSettings_triggered);
 
-    ui->mainToolBar->setObjectName("mainToolBar");
-    ui->mainToolBar->setMovable(false);
-    ui->mainToolBar->setFloatable(false);
-    ui->mainToolBar->setOrientation(Qt::Horizontal);
-    ui->mainToolBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    if (auto layout = qobject_cast<QVBoxLayout*>(this->centralWidget()->layout())) {
-        layout->insertWidget(0, ui->mainToolBar);
-        layout->setAlignment(ui->mainToolBar, Qt::AlignHCenter | Qt::AlignTop);
-    }
+        ui->mainToolBar->setObjectName("mainToolBar");
+        ui->mainToolBar->setMovable(false);
+        ui->mainToolBar->setFloatable(false);
+        ui->mainToolBar->setOrientation(Qt::Horizontal);
+        ui->mainToolBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-    // Target the 'Play' button for the white pill style
-    QTimer::singleShot(100, this, [this]() {
-        for (auto* action : ui->mainToolBar->actions()) {
-            if (action->text() == "Play") {
-                if (auto btn = dynamic_cast<QWidget*>(ui->mainToolBar->widgetForAction(action))) {
-                    btn->setObjectName("playButton");
-                    btn->style()->unpolish(btn);
-                    btn->style()->polish(btn);
-                }
-                break;
+        if (this->centralWidget() && this->centralWidget()->layout()) {
+            if (auto layout = qobject_cast<QVBoxLayout*>(this->centralWidget()->layout())) {
+                layout->insertWidget(0, ui->mainToolBar);
+                layout->setAlignment(ui->mainToolBar, Qt::AlignHCenter | Qt::AlignTop);
             }
         }
-    });
+
+        // Target the 'Play' button for the white pill style
+        QTimer::singleShot(100, this, [this]() {
+            if (!ui || !ui->mainToolBar) return;
+            for (auto* action : ui->mainToolBar->actions()) {
+                if (action && action->text() == "Play") {
+                    if (auto btn = dynamic_cast<QWidget*>(ui->mainToolBar->widgetForAction(action))) {
+                        btn->setObjectName("playButton");
+                        btn->style()->unpolish(btn);
+                        btn->style()->polish(btn);
+                    }
+                    break;
+                }
+            }
+        });
+    }
 }
