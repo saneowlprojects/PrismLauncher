@@ -1911,20 +1911,20 @@ void MainWindow::paintEvent(QPaintEvent* event) {
         QPainter painter(this);
         painter.setRenderHint(QPainter::SmoothPixmapTransform);
         painter.setOpacity(m_isFading ? 0.0 : 1.0);
-        painter.drawPixmap(rect(), m_scaledBackground);
+        painter.drawPixmap(this->rect(), m_scaledBackground);
         
         if (m_isFading && !m_scaledNextBackground.isNull()) {
             painter.setOpacity(1.0 - m_bgOpacityEffect->opacity());
-            painter.drawPixmap(rect(), m_scaledNextBackground);
+            painter.drawPixmap(this->rect(), m_scaledNextBackground);
         }
         
         // Gradient overlay: translucent top → solid black bottom
-        QLinearGradient gradient(rect.topLeft(), rect.bottomLeft());
+        QLinearGradient gradient(this->rect().topLeft(), this->rect().bottomLeft());
         gradient.setColorAt(0.0, QColor(0, 0, 0, 0));
         gradient.setColorAt(0.5, QColor(0, 0, 0, 100));
         gradient.setColorAt(1.0, QColor(0, 0, 0, 180));
         painter.setCompositionMode(QPainter::CompositionMode_Overlay);
-        painter.fillRect(rect(), gradient);
+        painter.fillRect(this->rect(), gradient);
     }
     QMainWindow::paintEvent(event);
 }
