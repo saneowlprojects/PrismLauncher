@@ -45,6 +45,8 @@
 #include <QMainWindow>
 #include <QProcess>
 #include <QTimer>
+#include <QGraphicsOpacityEffect>
+#include <QPropertyAnimation>
 
 #include "BaseInstance.h"
 #include "minecraft/auth/MinecraftAccount.h"
@@ -263,12 +265,19 @@ class MainWindow : public QMainWindow {
     QList<QString> m_wallpapers;
     QPixmap m_currentBackground;
     QPixmap m_scaledBackground;
+    QPixmap m_nextBackground;
+    QPixmap m_scaledNextBackground;
     int m_currentWallpaperIndex = 0;
     QTimer* m_wallpaperTimer = nullptr;
+    QGraphicsOpacityEffect* m_bgOpacityEffect = nullptr;
+    QPropertyAnimation* m_fadeAnimation = nullptr;
+    int m_fadeOpacity = 255;
+    bool m_isFading = false;
     void setupHeroWidget();
     void updateHeroWidget();
     void rebuildNavbar();
     void updateBackground();
+    void crossfadeToNextBackground();
 
     // managed by the application object
     Task* m_versionLoadTask = nullptr;

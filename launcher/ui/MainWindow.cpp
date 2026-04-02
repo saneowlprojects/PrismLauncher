@@ -1559,6 +1559,19 @@ void MainWindow::resizeEvent(QResizeEvent* event)
     if (!m_currentBackground.isNull()) {
         m_scaledBackground = m_currentBackground.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
     }
+    if (!m_scaledNextBackground.isNull()) {
+        m_scaledNextBackground = m_nextBackground.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+    }
+    
+    // Scale hero title based on window width
+    if (m_heroTitle) {
+        int titleSize = qBound(48, width() / 18, 96);
+        QFont titleFont = m_heroTitle->font();
+        titleFont.setPixelSize(titleSize);
+        titleFont.setWeight(QFont::Light);
+        m_heroTitle->setFont(titleFont);
+    }
+    
     QMainWindow::resizeEvent(event);
 }
 
@@ -1757,33 +1770,26 @@ void MainWindow::refreshCurrentInstance()
 void MainWindow::setupHeroWidget() {
     m_heroWidget = new QWidget(this);
     m_heroWidget->setObjectName("heroWidget");
+    m_heroWidget->setMinimumHeight(500);
     auto heroLayout = new QVBoxLayout(m_heroWidget);
     
-    m_heroBadge = new QLabel("SURVIVAL • 45 mods", m_heroWidget);
+    m_heroBadge = new QLabel("SURVIVAL • 45 MODS", m_heroWidget);
     m_heroBadge->setObjectName("heroBadge");
+    m_heroBadge->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     
     m_heroTitle = new QLabel("Resume Play", m_heroWidget);
     m_heroTitle->setObjectName("heroTitle");
+    m_heroTitle->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     
     m_heroDescription = new QLabel("Continue your adventure in Minecraft. Last played 2 hours ago.", m_heroWidget);
     m_heroDescription->setObjectName("heroDescription");
     m_heroDescription->setWordWrap(true);
+    m_heroDescription->setAlignment(Qt::AlignLeft | Qt::AlignTop);
     
-    auto effect0 = new QGraphicsDropShadowEffect(m_heroBadge);
-    effect0->setBlurRadius(10);
-    effect0->setColor(QColor(0, 0, 0, 150));
-    effect0->setOffset(0, 2);
-    m_heroBadge->setGraphicsEffect(effect0);
-
-    auto effect1 = new QGraphicsDropShadowEffect(m_heroTitle);
-    effect1->setBlurRadius(15);
-    effect1->setColor(QColor(0, 0, 0, 200));
-    effect1->setOffset(0, 2);
-    m_heroTitle->setGraphicsEffect(effect1);
-
     m_heroButton = new QPushButton(" Launch Game", m_heroWidget);
     m_heroButton->setIcon(QIcon::fromTheme("play"));
     m_heroButton->setObjectName("heroButton");
+    m_heroButton->setFixedSize(200, 56);
     connect(m_heroButton, &QPushButton::clicked, this, [this]() {
         if (m_selectedInstance) {
             activateInstance(m_selectedInstance);
@@ -1792,32 +1798,53 @@ void MainWindow::setupHeroWidget() {
 
     m_heroMoreButton = new QPushButton("More Info", m_heroWidget);
     m_heroMoreButton->setObjectName("heroMoreButton");
+    m_heroMoreButton->setFixedSize(180, 56);
+    connect(m_heroMoreButton, &QPushButton::clicked, this, [this]() {
+        if (m_selectedInstance) {
+            on_actionEditInstance_triggered();
+        }
+    });
 
     auto buttonLayout = new QHBoxLayout();
     buttonLayout->addWidget(m_heroButton);
     buttonLayout->addWidget(m_heroMoreButton);
     buttonLayout->addStretch(1);
-    buttonLayout->setSpacing(20);
+    buttonLayout->setSpacing(16);
 
-    heroLayout->addStretch(1);
+    heroLayout->addStretch(2);
     heroLayout->addWidget(m_heroBadge);
+    heroLayout->addSpacing(16);
     heroLayout->addWidget(m_heroTitle);
+    heroLayout->addSpacing(12);
     heroLayout->addWidget(m_heroDescription);
-    heroLayout->addSpacing(30);
+    heroLayout->addSpacing(32);
     heroLayout->addLayout(buttonLayout);
-    heroLayout->addSpacing(40);
+    heroLayout->addStretch(1);
     heroLayout->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    heroLayout->setContentsMargins(80, 0, 40, 0);
-    
-    m_heroWidget->setMinimumHeight(350);
+    heroLayout->setContentsMargins(80, 60, 80, 60);
+    heroLayout->setSpacing(0);
     
     if (auto layout = qobject_cast<QVBoxLayout*>(this->centralWidget()->layout())) {
         layout->insertWidget(0, m_heroWidget);
     }
     
-    QDir bgDir(APPLICATION->root() + "/backgrounds");
+    // Load backgrounds from multiple possible locations
+    QStringList bgPaths;
+    bgPaths << APPLICATION->root() + "/backgrounds";
+    bgPaths << QApplication::applicationDirPath() + "/backgrounds";
+    bgPaths << QApplication::applicationDirPath() + "/../backgrounds";
+    
+    QDir bgDir;
+    for (const auto& path : bgPaths) {
+        bgDir.setPath(path);
+        if (bgDir.exists()) break;
+    }
+    
+    if (!bgDir.exists()) {
+        bgDir.setPath(APPLICATION->root() + "/backgrounds");
+    }
     for (const auto& file : bgDir.entryList(QDir::Files)) {
-        if (file.endsWith(".png") || file.endsWith(".jpg")) {
+        if (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg")) {
             m_wallpapers.append(bgDir.absoluteFilePath(file));
         }
     }
@@ -1841,23 +1868,63 @@ void MainWindow::updateBackground() {
     
     if (m_wallpapers.isEmpty()) return;
     
+    crossfadeToNextBackground();
+}
+
+void MainWindow::crossfadeToNextBackground() {
+    if (m_isFading) return;
+    
     QString bgPath = m_wallpapers[m_currentWallpaperIndex];
     m_currentWallpaperIndex = (m_currentWallpaperIndex + 1) % m_wallpapers.size();
     
-    if (m_currentBackground.load(bgPath)) {
-        m_scaledBackground = m_currentBackground.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+    if (!m_nextBackground.load(bgPath)) return;
+    
+    m_scaledNextBackground = m_nextBackground.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+    
+    if (!m_bgOpacityEffect) {
+        m_bgOpacityEffect = new QGraphicsOpacityEffect(this);
+        m_bgOpacityEffect->setOpacity(1.0);
+        this->setGraphicsEffect(m_bgOpacityEffect);
+        
+        m_fadeAnimation = new QPropertyAnimation(m_bgOpacityEffect, "opacity", this);
+        m_fadeAnimation->setDuration(1500);
+        m_fadeAnimation->setEasingCurve(QEasingCurve::InOutCubic);
+        connect(m_fadeAnimation, &QPropertyAnimation::finished, [this]() {
+            m_isFading = false;
+            m_currentBackground = m_nextBackground;
+            m_scaledBackground = m_scaledNextBackground;
+            m_nextBackground = QPixmap();
+            m_scaledNextBackground = QPixmap();
+            m_bgOpacityEffect->setOpacity(1.0);
+            update();
+        });
     }
-    update();
+    
+    m_isFading = true;
+    m_fadeAnimation->setStartValue(1.0);
+    m_fadeAnimation->setEndValue(0.0);
+    m_fadeAnimation->start();
 }
 
 void MainWindow::paintEvent(QPaintEvent* event) {
     if (!m_scaledBackground.isNull()) {
         QPainter painter(this);
         painter.setRenderHint(QPainter::SmoothPixmapTransform);
+        painter.setOpacity(m_isFading ? 0.0 : 1.0);
         painter.drawPixmap(rect(), m_scaledBackground);
         
-        // Dynamic darkness overlay for readability
-        painter.fillRect(rect(), QColor(0, 0, 0, 80));
+        if (m_isFading && !m_scaledNextBackground.isNull()) {
+            painter.setOpacity(1.0 - m_bgOpacityEffect->opacity());
+            painter.drawPixmap(rect(), m_scaledNextBackground);
+        }
+        
+        // Gradient overlay: translucent top → solid black bottom
+        QLinearGradient gradient(rect.topLeft(), rect.bottomLeft());
+        gradient.setColorAt(0.0, QColor(0, 0, 0, 0));
+        gradient.setColorAt(0.5, QColor(0, 0, 0, 100));
+        gradient.setColorAt(1.0, QColor(0, 0, 0, 180));
+        painter.setCompositionMode(QPainter::CompositionMode_Overlay);
+        painter.fillRect(rect(), gradient);
     }
     QMainWindow::paintEvent(event);
 }
@@ -2001,10 +2068,23 @@ void MainWindow::rebuildNavbar() {
         ui->mainToolBar->clear();
         
         auto playAction = ui->mainToolBar->addAction("Play");
-        connect(playAction, &QAction::triggered, this, &MainWindow::on_actionLaunchInstance_triggered);
+        playAction->setCheckable(true);
+        playAction->setChecked(true);
+        connect(playAction, &QAction::triggered, this, [this, playAction]() {
+            for (auto* action : ui->mainToolBar->actions()) {
+                if (action != playAction) action->setChecked(false);
+            }
+            playAction->setChecked(true);
+            if (view) view->setFocus();
+        });
         
         auto instancesAction = ui->mainToolBar->addAction("Instances");
-        connect(instancesAction, &QAction::triggered, this, [this]() {
+        instancesAction->setCheckable(true);
+        connect(instancesAction, &QAction::triggered, this, [this, instancesAction]() {
+            for (auto* action : ui->mainToolBar->actions()) {
+                if (action != instancesAction) action->setChecked(false);
+            }
+            instancesAction->setChecked(true);
             if (view) view->setFocus();
         });
 
@@ -2030,17 +2110,15 @@ void MainWindow::rebuildNavbar() {
             }
         }
 
-        // Target the 'Play' button for the white pill style
+        // Style the checked button
         QTimer::singleShot(100, this, [this]() {
             if (!ui || !ui->mainToolBar) return;
             for (auto* action : ui->mainToolBar->actions()) {
-                if (action && action->text() == "Play") {
+                if (action && action->isChecked()) {
                     if (auto btn = dynamic_cast<QWidget*>(ui->mainToolBar->widgetForAction(action))) {
-                        btn->setObjectName("playButton");
                         btn->style()->unpolish(btn);
                         btn->style()->polish(btn);
                     }
-                    break;
                 }
             }
         });

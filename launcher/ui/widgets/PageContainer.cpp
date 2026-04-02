@@ -53,6 +53,7 @@
 #include "settings/SettingsObject.h"
 
 #include "ui/widgets/IconLabel.h"
+#include "ui/widgets/ToggleSwitch.h"
 
 #include "Application.h"
 #include "DesktopServices.h"
@@ -161,10 +162,14 @@ void PageContainer::createUI()
 {
     m_pageStack = new QStackedLayout;
     m_pageList = new PageView;
+    m_pageList->setObjectName("settingsSidebar");
+    m_pageList->setFixedWidth(224);
     m_header = new QLabel();
+    m_header->setObjectName("pageHeader");
 
     QFont headerLabelFont = m_header->font();
     headerLabelFont.setBold(true);
+    headerLabelFont.setWeight(QFont::Light);
     const int pointSize = headerLabelFont.pointSize();
     if (pointSize > 0)
         headerLabelFont.setPointSize(pointSize + 2);
@@ -184,6 +189,7 @@ void PageContainer::createUI()
     m_layout->addWidget(m_pageList, 0, 0, 3, 1);
     m_layout->addLayout(m_pageStack, 1, 1, 1, 1);
     m_layout->setColumnStretch(1, 4);
+    m_layout->setColumnMinimumWidth(0, 224);
     m_layout->setContentsMargins(0, 0, 0, 0);
     setLayout(m_layout);
 }

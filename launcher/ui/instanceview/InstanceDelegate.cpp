@@ -182,51 +182,103 @@ void ListViewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     painter->setRenderHint(QPainter::Antialiasing);
     painter->setRenderHint(QPainter::SmoothPixmapTransform);
 
-    QRect cardRect = opt.rect.adjusted(10, 10, -10, -10);
+    QRect cardRect = opt.rect.adjusted(8, 8, -8, -8);
     bool selected = (opt.state & QStyle::State_Selected);
     bool hovered = (opt.state & QStyle::State_MouseOver);
 
-    // Rounded path for the high-fidelity card
     QPainterPath path;
-    path.addRoundedRect(cardRect, 20, 20);
+    path.addRoundedRect(cardRect, 16, 16);
     
-    // Draw the actual image (icon) scaled to fill the poster
+    // Gradient background: emerald to slate with transparency
+    QLinearGradient gradient(cardRect.topLeft(), cardRect.bottomRight());
+    gradient.setColorAt(0.0, QColor(16, 185, 129, 140));
+    gradient.setColorAt(1.0, QColor(100, 116, 139, 140));
+    
+    painter->fillPath(path, gradient);
+    
+    // Draw the icon scaled to fill the card
     QRect iconRect = cardRect;
     QPixmap pixmap = opt.icon.pixmap(512, 512); 
     if (!pixmap.isNull()) {
         painter->setClipPath(path);
+        painter->setOpacity(0.85);
         painter->drawPixmap(iconRect, pixmap.scaled(iconRect.size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation));
+        painter->setOpacity(1.0);
         painter->setClipping(false);
-    } else {
-        painter->fillPath(path, QColor(255, 255, 255, 20));
     }
 
-    // Selection/Focus Effect (Premium white border and glow)
+    // Dark overlay at bottom for text readability
+    painter->save();
+    painter->setClipPath(path);
+    QLinearGradient textOverlay(cardRect.bottomLeft(), cardRect.center());
+    textOverlay.setColorAt(0.0, QColor(0, 0, 0, 180));
+    textOverlay.setColorAt(1.0, QColor(0, 0, 0, 0));
+    painter->fillRect(cardRect, textOverlay);
+    painter->restore();
+
+    // Border that brightens on hover/selection
     if (selected) {
-        painter->setPen(QPen(Qt::white, 6));
+        painter->setPen(QPen(QColor(255, 255, 255, 200), 3));
         painter->drawPath(path);
-
-        // Title overlay for selected item — clipped to card rounded corners
-        painter->save();
-        painter->setClipPath(path);
-        painter->setBrush(QColor(0, 0, 0, 180));
-        painter->setPen(Qt::NoPen);
-        QRect titleRect(cardRect.left(), cardRect.bottom() - 50, cardRect.width(), 50);
-        painter->drawRect(titleRect);
-        painter->restore();
-
-        painter->setPen(Qt::white);
-        QFont font = opt.font;
-        font.setPixelSize(18);
-        font.setWeight(QFont::Bold);
-        painter->setFont(font);
-        painter->drawText(titleRect.adjusted(20, 0, -20, 0), Qt::AlignVCenter | Qt::AlignLeft, opt.text);
+        
+        painter->setPen(QPen(QColor(255, 255, 255, 80), 8));
+        painter->drawPath(path);
     } else if (hovered) {
         painter->setPen(QPen(QColor(255, 255, 255, 120), 2));
         painter->drawPath(path);
     } else {
         painter->setPen(QPen(QColor(255, 255, 255, 30), 1));
         painter->drawPath(path);
+    }
+
+    // Instance name (16px, bold) at bottom-left
+    QString name = index.data(Qt::DisplayRole).toString();
+    if (!name.isEmpty()) {
+        painter->setPen(Qt::white);
+        QFont nameFont = opt.font;
+        nameFont.setPixelSize(16);
+        nameFont.setWeight(QFont::Bold);
+        painter->setFont(nameFont);
+        QRect nameRect(cardRect.left() + 16, cardRect.bottom() - 52, cardRect.width() - 32, 24);
+        painter->drawText(nameRect, Qt::AlignLeft | Qt::AlignBottom, name);
+    }
+    
+    // Metadata: version + mod count (12px, muted)
+    QString metadata = index.data(Qt::UserRole).toString();
+    if (metadata.isEmpty()) {
+        metadata = "1.20.4";
+    }
+    painter->setPen(QColor(255, 255, 255, 160));
+    QFont metaFont = opt.font;
+    metaFont.setPixelSize(12);
+    metaFont.setWeight(QFont::Normal);
+    painter->setFont(metaFont);
+    QRect metaRect(cardRect.left() + 16, cardRect.bottom() - 32, cardRect.width() - 32, 18);
+    painter->drawText(metaRect, Qt::AlignLeft | Qt::AlignBottom, metadata);
+
+    // Hover-reveal play button (top-right)
+    if (hovered) {
+        QIcon playIcon = QIcon::fromTheme("dialog-positive");
+        if (playIcon.isNull()) playIcon = QIcon::fromTheme("gtk-ok");
+        if (playIcon.isNull()) playIcon = QIcon::fromTheme("apply");
+        
+        QRect playButtonRect(cardRect.right() - 40, cardRect.top() + 12, 28, 28);
+        
+        // Play button background
+        painter->setBrush(QColor(255, 255, 255, 200));
+        painter->setPen(Qt::NoPen);
+        painter->drawEllipse(playButtonRect);
+        
+        // Play triangle
+        painter->setBrush(QColor(0, 0, 0));
+        QPainterPath playTriangle;
+        int cx = playButtonRect.center().x();
+        int cy = playButtonRect.center().y();
+        playTriangle.moveTo(cx - 4, cy - 6);
+        playTriangle.lineTo(cx + 6, cy);
+        playTriangle.lineTo(cx - 4, cy + 6);
+        playTriangle.closeSubpath();
+        painter->drawPath(playTriangle);
     }
 
     // Progress Overlay if needed
@@ -238,8 +290,8 @@ void ListViewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
 
 QSize ListViewDelegate::sizeHint(const QStyleOptionViewItem& option, [[maybe_unused]] const QModelIndex& index) const
 {
-    // High-fidelity posters are 280x160 (roughly 16:9) + margins
-    return QSize(300, 180);
+    // Modern cards: 320x192 (16:9 aspect ratio) + margins
+    return QSize(320, 192);
 }
 
 class NoReturnTextEdit : public QTextEdit {
