@@ -1860,7 +1860,38 @@ void MainWindow::setupHeroWidget() {
 }
 
 void MainWindow::setupPages() {
-    // Page navigation disabled - keeping simple layout for now
+    // Create a header label for instances page (hidden by default)
+    m_instancesHeader = new QLabel(tr("All Instances"), this);
+    m_instancesHeader->setObjectName("instancesHeader");
+    m_instancesHeader->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    m_instancesHeader->setVisible(false);
+    
+    // Insert header before the view in the layout
+    if (auto layout = this->centralWidget()->layout()) {
+        // Find position of view
+        int viewIndex = -1;
+        for (int i = 0; i < layout->count(); i++) {
+            if (layout->itemAt(i)->widget() == view) {
+                viewIndex = i;
+                break;
+            }
+        }
+        if (viewIndex > 0) {
+            layout->insertWidget(viewIndex, m_instancesHeader);
+        }
+    }
+}
+
+void MainWindow::showHomePage() {
+    if (m_heroWidget) m_heroWidget->setVisible(true);
+    if (m_instancesHeader) m_instancesHeader->setVisible(false);
+    updateHeroWidget();
+}
+
+void MainWindow::showInstancesPage() {
+    if (m_heroWidget) m_heroWidget->setVisible(false);
+    if (m_instancesHeader) m_instancesHeader->setVisible(true);
+    if (view) view->setFocus();
 }
 
 void MainWindow::showHomePage() {

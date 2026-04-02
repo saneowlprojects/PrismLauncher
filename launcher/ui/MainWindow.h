@@ -282,6 +282,7 @@ class MainWindow : public QMainWindow {
     QStackedWidget* m_pageStack = nullptr;
     QWidget* m_homePage = nullptr;
     QWidget* m_instancesPage = nullptr;
+    QLabel* m_instancesHeader = nullptr;
     int m_homePageIndex = 0;
     int m_instancesPageIndex = 1;
     void setupPages();
