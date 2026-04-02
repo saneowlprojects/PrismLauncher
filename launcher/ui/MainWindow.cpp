@@ -1876,8 +1876,11 @@ void MainWindow::setupPages() {
                 break;
             }
         }
+        // Insert header before view
         if (viewIndex > 0) {
-            layout->insertWidget(viewIndex, m_instancesHeader);
+            if (auto boxLayout = qobject_cast<QBoxLayout*>(layout)) {
+                boxLayout->insertWidget(viewIndex, m_instancesHeader);
+            }
         }
     }
 }
@@ -1892,19 +1895,6 @@ void MainWindow::showInstancesPage() {
     if (m_heroWidget) m_heroWidget->setVisible(false);
     if (m_instancesHeader) m_instancesHeader->setVisible(true);
     if (view) view->setFocus();
-}
-
-void MainWindow::showHomePage() {
-    if (m_pageStack) {
-        m_pageStack->setCurrentIndex(m_homePageIndex);
-        updateHeroWidget();
-    }
-}
-
-void MainWindow::showInstancesPage() {
-    if (m_pageStack) {
-        m_pageStack->setCurrentIndex(m_instancesPageIndex);
-    }
 }
 
 void MainWindow::updateBackground() {
