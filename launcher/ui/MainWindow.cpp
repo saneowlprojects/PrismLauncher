@@ -371,14 +371,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         view->setSourceOfGroupCollapseStatus(
             [](const QString& groupName) -> bool { return APPLICATION->instances()->isGroupCollapsed(groupName); });
         connect(view, &InstanceView::groupStateChanged, APPLICATION->instances(), &InstanceList::on_GroupStateChanged);
-        qDebug() << "MainWindow: Setting up instance view layout";
-        if (auto layout = this->centralWidget()->layout()) {
-            layout->addWidget(m_otherInstancesLabel);
-            layout->setAlignment(m_otherInstancesLabel, Qt::AlignLeft);
-            layout->addWidget(view);
-        } else {
-            qWarning() << "MainWindow: Layout still null in setupView";
-        }
+        // Instance view will be added to instances page in setupPages()
         qDebug() << "MainWindow: Instance view setup completed";
     }
     // The cat background
@@ -475,6 +468,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(ui->actionUndoTrashInstance, &QAction::triggered, this, &MainWindow::undoTrashInstance);
 
     setupHeroWidget();
+    setupPages();
 
     setSelectedInstanceById(APPLICATION->settings()->get("SelectedInstance").toString());
 
@@ -1864,6 +1858,76 @@ void MainWindow::setupHeroWidget() {
     }
 }
 
+void MainWindow::setupPages() {
+    bool isPill = APPLICATION->settings()->get("ApplicationTheme").toString() == "pill";
+    
+    // Create the page stack
+    m_pageStack = new QStackedWidget(this);
+    m_pageStack->setObjectName("pageStack");
+    
+    // Create home page (hero only)
+    m_homePage = new QWidget(this);
+    m_homePage->setObjectName("homePage");
+    auto homeLayout = new QVBoxLayout(m_homePage);
+    homeLayout->setContentsMargins(0, 0, 0, 0);
+    homeLayout->setSpacing(0);
+    
+    // Hero widget is already created, add it to home page
+    if (m_heroWidget) {
+        homeLayout->addWidget(m_heroWidget);
+    }
+    homeLayout->addStretch(1);
+    
+    // Create instances page (all instances)
+    m_instancesPage = new QWidget(this);
+    m_instancesPage->setObjectName("instancesPage");
+    auto instancesLayout = new QVBoxLayout(m_instancesPage);
+    instancesLayout->setContentsMargins(0, 0, 0, 0);
+    instancesLayout->setSpacing(0);
+    
+    // Add "Instances" header
+    auto instancesHeader = new QLabel(tr("All Instances"), this);
+    instancesHeader->setObjectName("instancesHeader");
+    instancesHeader->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    instancesLayout->addWidget(instancesHeader);
+    instancesLayout->addSpacing(24);
+    
+    // Add instance view to instances page
+    if (view) {
+        instancesLayout->addWidget(view);
+    }
+    
+    // Add pages to stack
+    m_homePageIndex = m_pageStack->addWidget(m_homePage);
+    m_instancesPageIndex = m_pageStack->addWidget(m_instancesPage);
+    
+    // Add page stack to central widget layout
+    if (auto layout = this->centralWidget()->layout()) {
+        if (isPill) {
+            // In pill mode, page stack is added after navbar (which is at position 0)
+            layout->addWidget(m_pageStack);
+        } else {
+            layout->addWidget(m_pageStack);
+        }
+    }
+    
+        // Start on home page
+    m_pageStack->setCurrentIndex(isPill ? m_homePageIndex : m_instancesPageIndex);
+}
+
+void MainWindow::showHomePage() {
+    if (m_pageStack) {
+        m_pageStack->setCurrentIndex(m_homePageIndex);
+        updateHeroWidget();
+    }
+}
+
+void MainWindow::showInstancesPage() {
+    if (m_pageStack) {
+        m_pageStack->setCurrentIndex(m_instancesPageIndex);
+    }
+}
+
 void MainWindow::updateBackground() {
     if (APPLICATION->settings()->get("ApplicationTheme").toString() != "pill") {
         if (m_wallpaperTimer) m_wallpaperTimer->stop();
@@ -1888,49 +1952,63 @@ void MainWindow::crossfadeToNextBackground() {
     
     m_scaledNextBackground = m_nextBackground.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
     
-    if (!m_bgOpacityEffect) {
-        m_bgOpacityEffect = new QGraphicsOpacityEffect(this);
-        m_bgOpacityEffect->setOpacity(1.0);
-        this->setGraphicsEffect(m_bgOpacityEffect);
+    m_isFading = true;
+    m_fadeProgress = 0.0;
+    
+    // Simple fade using timer
+    const int duration = 1500;
+    const int steps = 60;
+    const int interval = duration / steps;
+    int currentStep = 0;
+    
+    QTimer* fadeTimer = new QTimer(this);
+    connect(fadeTimer, &QTimer::timeout, [this, fadeTimer, steps, currentStep]() mutable {
+        currentStep++;
+        m_fadeProgress = static_cast<double>(currentStep) / steps;
+        update();
         
-        m_fadeAnimation = new QPropertyAnimation(m_bgOpacityEffect, "opacity", this);
-        m_fadeAnimation->setDuration(1500);
-        m_fadeAnimation->setEasingCurve(QEasingCurve::InOutCubic);
-        connect(m_fadeAnimation, &QPropertyAnimation::finished, [this]() {
+        if (currentStep >= steps) {
+            fadeTimer->stop();
+            fadeTimer->deleteLater();
             m_isFading = false;
             m_currentBackground = m_nextBackground;
             m_scaledBackground = m_scaledNextBackground;
             m_nextBackground = QPixmap();
             m_scaledNextBackground = QPixmap();
-            m_bgOpacityEffect->setOpacity(1.0);
+            m_fadeProgress = 0.0;
             update();
-        });
-    }
-    
-    m_isFading = true;
-    m_fadeAnimation->setStartValue(1.0);
-    m_fadeAnimation->setEndValue(0.0);
-    m_fadeAnimation->start();
+        }
+    });
+    fadeTimer->start(interval);
 }
 
 void MainWindow::paintEvent(QPaintEvent* event) {
     if (!m_scaledBackground.isNull()) {
         QPainter painter(this);
         painter.setRenderHint(QPainter::SmoothPixmapTransform);
-        painter.setOpacity(m_isFading ? 0.0 : 1.0);
+        
+        // Draw current background (fading out if crossfading)
+        if (m_isFading) {
+            painter.setOpacity(1.0 - m_fadeProgress);
+        } else {
+            painter.setOpacity(1.0);
+        }
         painter.drawPixmap(this->rect(), m_scaledBackground);
         
+        // Draw next background (fading in if crossfading)
         if (m_isFading && !m_scaledNextBackground.isNull()) {
-            painter.setOpacity(1.0 - m_bgOpacityEffect->opacity());
+            painter.setOpacity(m_fadeProgress);
             painter.drawPixmap(this->rect(), m_scaledNextBackground);
         }
         
         // Gradient overlay: translucent top → solid black bottom
         QLinearGradient gradient(this->rect().topLeft(), this->rect().bottomLeft());
         gradient.setColorAt(0.0, QColor(0, 0, 0, 0));
-        gradient.setColorAt(0.5, QColor(0, 0, 0, 100));
-        gradient.setColorAt(1.0, QColor(0, 0, 0, 180));
-        painter.setCompositionMode(QPainter::CompositionMode_Overlay);
+        gradient.setColorAt(0.3, QColor(0, 0, 0, 80));
+        gradient.setColorAt(0.6, QColor(0, 0, 0, 160));
+        gradient.setColorAt(1.0, QColor(0, 0, 0, 220));
+        painter.setOpacity(1.0);
+        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
         painter.fillRect(this->rect(), gradient);
     }
     QMainWindow::paintEvent(event);
@@ -2056,6 +2134,11 @@ void MainWindow::rebuildNavbar() {
         if (ui->newsToolBar) ui->newsToolBar->show();
         if (statusBar()) statusBar()->show();
 
+        // In non-pill mode, show instances page
+        if (m_pageStack) {
+            m_pageStack->setCurrentIndex(m_instancesPageIndex);
+        }
+
         updateMainToolBar();
         return;
     }
@@ -2067,8 +2150,15 @@ void MainWindow::rebuildNavbar() {
         this->centralWidget()->setAutoFillBackground(false);
     }
     
-    if (ui->instanceToolBar) ui->instanceToolBar->hide();
-    if (ui->newsToolBar) ui->newsToolBar->hide();
+    // Hide sidebars and status bar in pill mode
+    if (ui->instanceToolBar) {
+        ui->instanceToolBar->hide();
+        ui->instanceToolBar->setVisible(false);
+    }
+    if (ui->newsToolBar) {
+        ui->newsToolBar->hide();
+        ui->newsToolBar->setVisible(false);
+    }
     if (statusBar()) statusBar()->hide();
     
     if (ui->mainToolBar) {
@@ -2082,7 +2172,7 @@ void MainWindow::rebuildNavbar() {
                 if (action != playAction) action->setChecked(false);
             }
             playAction->setChecked(true);
-            if (view) view->setFocus();
+            showHomePage();
         });
         
         auto instancesAction = ui->mainToolBar->addAction("Instances");
@@ -2092,6 +2182,7 @@ void MainWindow::rebuildNavbar() {
                 if (action != instancesAction) action->setChecked(false);
             }
             instancesAction->setChecked(true);
+            showInstancesPage();
             if (view) view->setFocus();
         });
 
@@ -2117,16 +2208,13 @@ void MainWindow::rebuildNavbar() {
             }
         }
 
-        // Style the checked button
-        QTimer::singleShot(100, this, [this]() {
-            if (!ui || !ui->mainToolBar) return;
-            for (auto* action : ui->mainToolBar->actions()) {
-                if (action && action->isChecked()) {
-                    if (auto btn = dynamic_cast<QWidget*>(ui->mainToolBar->widgetForAction(action))) {
-                        btn->style()->unpolish(btn);
-                        btn->style()->polish(btn);
-                    }
-                }
+        // Style the play button specially
+        QTimer::singleShot(100, this, [this, playAction]() {
+            if (!ui || !ui->mainToolBar || !playAction) return;
+            if (auto btn = dynamic_cast<QWidget*>(ui->mainToolBar->widgetForAction(playAction))) {
+                btn->setObjectName("playButton");
+                btn->style()->unpolish(btn);
+                btn->style()->polish(btn);
             }
         });
     }

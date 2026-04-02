@@ -153,6 +153,26 @@ QWidget#heroWidget {
 }
 
 /* =====================================================
+   INSTANCES PAGE HEADER
+   ===================================================== */
+#instancesHeader {
+    color: white;
+    font-size: 36px;
+    font-weight: 600;
+    margin-top: 40px;
+    margin-left: 80px !important;
+    margin-right: 80px !important;
+}
+
+#homePage, #instancesPage {
+    background: transparent;
+}
+
+#pageStack {
+    background: transparent;
+}
+
+/* =====================================================
    INSTANCE CARDS
    ===================================================== */
 InstanceView {
