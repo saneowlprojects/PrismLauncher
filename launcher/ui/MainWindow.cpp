@@ -510,7 +510,7 @@ void MainWindow::retranslateUi()
     renameButton->setToolTip(ui->actionRenameInstance->toolTip());
 
     // replace the %1 with the launcher display name in some actions
-    if (helpMenuButton->toolTip().contains("%1"))
+    if (helpMenuButton && helpMenuButton->toolTip().contains("%1"))
         helpMenuButton->setToolTip(helpMenuButton->toolTip().arg(BuildConfig.LAUNCHER_DISPLAYNAME));
 
     for (auto action : ui->helpMenu->actions()) {
