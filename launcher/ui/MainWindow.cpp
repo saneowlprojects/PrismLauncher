@@ -1860,62 +1860,7 @@ void MainWindow::setupHeroWidget() {
 }
 
 void MainWindow::setupPages() {
-    if (!this->centralWidget() || !this->centralWidget()->layout()) {
-        return;
-    }
-    
-    // Only set up page navigation if we're in pill mode
-    if (APPLICATION && APPLICATION->settings()) {
-        QString theme = APPLICATION->settings()->get("ApplicationTheme").toString();
-        if (theme != "pill") {
-            return;
-        }
-    } else {
-        return;
-    }
-    
-    // Create page stack
-    m_pageStack = new QStackedWidget(this);
-    m_pageStack->setObjectName("pageStack");
-    
-    // Home page (hero only)
-    m_homePage = new QWidget();
-    if (m_heroWidget) {
-        auto layout = new QVBoxLayout(m_homePage);
-        layout->setContentsMargins(0, 0, 0, 0);
-        layout->addWidget(m_heroWidget);
-    }
-    
-    // Instances page
-    m_instancesPage = new QWidget();
-    if (view) {
-        auto layout = new QVBoxLayout(m_instancesPage);
-        layout->setContentsMargins(0, 0, 0, 0);
-        auto header = new QLabel(tr("All Instances"));
-        header->setObjectName("instancesHeader");
-        layout->addWidget(header);
-        layout->addSpacing(24);
-        layout->addWidget(view);
-    }
-    
-    // Add pages
-    m_homePageIndex = m_pageStack->addWidget(m_homePage);
-    m_instancesPageIndex = m_pageStack->addWidget(m_instancesPage);
-    
-    // Replace central widget contents with page stack
-    auto centralLayout = this->centralWidget()->layout();
-    if (centralLayout) {
-        // Remove existing widgets from layout
-        QLayoutItem* item;
-        while ((item = centralLayout->takeAt(0)) != nullptr) {
-            delete item;
-        }
-        // Add page stack
-        centralLayout->addWidget(m_pageStack);
-    }
-    
-    // Start on home page
-    m_pageStack->setCurrentIndex(m_homePageIndex);
+    // Page navigation disabled - keeping simple layout for now
 }
 
 void MainWindow::showHomePage() {
