@@ -26,12 +26,5 @@
         <!-- https://commons.wikimedia.org/wiki/File:Teawie_Party.png -->
         <file alias="teawie-spooky">teawie-spooky.png</file>
         <!-- https://commons.wikimedia.org/wiki/File:Teawie_Halloween.png -->
-        
-        <!-- Minecraft Wallpaper Collection -->
-        <file alias="minecraft-java">wallpaper_minecraft_java_edition_2560x1440.png</file>
-        <file alias="minecraft-burberry">wallpaper_minecraft_burberry_2560x1440.png</file>
-        <file alias="minecraft-15th">wallpaper_minecraft_15th-anniversary_2560x1440.png</file>
-        <file alias="minecraft-pc">wallpaper_minecraft_pc_bundle_2560x1440.png</file>
-        <file alias="dotnet-wallpaper">MCV_SPR26Drop_TT_DotNet_Wallpaper_2560x1440.png</file>
     </qresource>
 </RCC>
