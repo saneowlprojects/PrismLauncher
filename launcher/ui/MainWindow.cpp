@@ -1828,24 +1828,31 @@ void MainWindow::setupHeroWidget() {
         layout->insertWidget(0, m_heroWidget);
     }
     
-    // Load backgrounds from multiple possible locations
+    // Load backgrounds from Qt resources (embedded in binary)
+    QDirIterator resourceIter(":/backgrounds", QDir::Files);
+    while (resourceIter.hasNext()) {
+        resourceIter.next();
+        QString filePath = resourceIter.filePath();
+        if (filePath.endsWith(".png") || filePath.endsWith(".jpg") || filePath.endsWith(".jpeg")) {
+            m_wallpapers.append(filePath);
+        }
+    }
+    
+    // Also try loading from filesystem locations (user's own wallpapers)
     QStringList bgPaths;
     bgPaths << APPLICATION->root() + "/backgrounds";
     bgPaths << QApplication::applicationDirPath() + "/backgrounds";
     bgPaths << QApplication::applicationDirPath() + "/../backgrounds";
     
-    QDir bgDir;
     for (const auto& path : bgPaths) {
-        bgDir.setPath(path);
-        if (bgDir.exists()) break;
-    }
-    
-    if (!bgDir.exists()) {
-        bgDir.setPath(APPLICATION->root() + "/backgrounds");
-    }
-    for (const auto& file : bgDir.entryList(QDir::Files)) {
-        if (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg")) {
-            m_wallpapers.append(bgDir.absoluteFilePath(file));
+        QDir bgDir(path);
+        if (bgDir.exists()) {
+            for (const auto& file : bgDir.entryList(QDir::Files)) {
+                if (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg")) {
+                    m_wallpapers.append(bgDir.absoluteFilePath(file));
+                }
+            }
+            break;
         }
     }
     
