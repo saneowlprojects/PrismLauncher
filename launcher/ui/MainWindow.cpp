@@ -1818,6 +1818,7 @@ void MainWindow::setupHeroWidget() {
     heroLayout->setContentsMargins(80, 60, 80, 60);
     heroLayout->setSpacing(0);
     
+    // Add hero widget to layout
     if (auto layout = qobject_cast<QVBoxLayout*>(this->centralWidget()->layout())) {
         layout->insertWidget(0, m_heroWidget);
     }
@@ -1859,60 +1860,7 @@ void MainWindow::setupHeroWidget() {
 }
 
 void MainWindow::setupPages() {
-    bool isPill = APPLICATION->settings()->get("ApplicationTheme").toString() == "pill";
-    
-    // Create the page stack
-    m_pageStack = new QStackedWidget(this);
-    m_pageStack->setObjectName("pageStack");
-    
-    // Create home page (hero only)
-    m_homePage = new QWidget(this);
-    m_homePage->setObjectName("homePage");
-    auto homeLayout = new QVBoxLayout(m_homePage);
-    homeLayout->setContentsMargins(0, 0, 0, 0);
-    homeLayout->setSpacing(0);
-    
-    // Hero widget is already created, add it to home page
-    if (m_heroWidget) {
-        homeLayout->addWidget(m_heroWidget);
-    }
-    homeLayout->addStretch(1);
-    
-    // Create instances page (all instances)
-    m_instancesPage = new QWidget(this);
-    m_instancesPage->setObjectName("instancesPage");
-    auto instancesLayout = new QVBoxLayout(m_instancesPage);
-    instancesLayout->setContentsMargins(0, 0, 0, 0);
-    instancesLayout->setSpacing(0);
-    
-    // Add "Instances" header
-    auto instancesHeader = new QLabel(tr("All Instances"), this);
-    instancesHeader->setObjectName("instancesHeader");
-    instancesHeader->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    instancesLayout->addWidget(instancesHeader);
-    instancesLayout->addSpacing(24);
-    
-    // Add instance view to instances page
-    if (view) {
-        instancesLayout->addWidget(view);
-    }
-    
-    // Add pages to stack
-    m_homePageIndex = m_pageStack->addWidget(m_homePage);
-    m_instancesPageIndex = m_pageStack->addWidget(m_instancesPage);
-    
-    // Add page stack to central widget layout
-    if (auto layout = this->centralWidget()->layout()) {
-        if (isPill) {
-            // In pill mode, page stack is added after navbar (which is at position 0)
-            layout->addWidget(m_pageStack);
-        } else {
-            layout->addWidget(m_pageStack);
-        }
-    }
-    
-        // Start on home page
-    m_pageStack->setCurrentIndex(isPill ? m_homePageIndex : m_instancesPageIndex);
+    // Page navigation - temporarily disabled while debugging
 }
 
 void MainWindow::showHomePage() {
