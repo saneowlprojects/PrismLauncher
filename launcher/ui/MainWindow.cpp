@@ -42,6 +42,7 @@
 #include "BuildConfig.h"
 #include "FileSystem.h"
 
+#include "BlurWidget.h"
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 #include "BackgroundWidget.h"
@@ -2065,10 +2066,11 @@ void MainWindow::rebuildNavbar() {
 void MainWindow::setupPillNavBar() {
     if (m_pillNavBar) return;
     
-    m_pillNavBar = new QWidget(this->centralWidget());
-    m_pillNavBar->setObjectName("pillNavBar");
+    m_pillNavBar = new BlurWidget(this->centralWidget());
+    m_pillNavBar->setBlurRadius(12);
+    m_pillNavBar->setOverlayColor(QColor(60, 55, 45, 153));
+    m_pillNavBar->setBorderRadius(9999);
     m_pillNavBar->setFixedHeight(56);
-    m_pillNavBar->setAttribute(Qt::WA_TranslucentBackground);
     m_pillNavBar->raise();
     
     auto navLayout = new QHBoxLayout(m_pillNavBar);

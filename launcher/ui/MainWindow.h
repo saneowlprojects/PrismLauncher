@@ -269,7 +269,7 @@ class MainWindow : public QMainWindow {
     void rebuildNavbar();
     
     // Pill navigation bar
-    QWidget* m_pillNavBar = nullptr;
+    class BlurWidget* m_pillNavBar = nullptr;
     QButtonGroup* m_navButtonGroup = nullptr;
     QPushButton* m_navPlayBtn = nullptr;
     QPushButton* m_navInstancesBtn = nullptr;

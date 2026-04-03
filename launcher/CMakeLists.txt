@@ -848,6 +848,8 @@ SET(LAUNCHER_SOURCES
     ui/GuiUtil.cpp
     ui/BackgroundWidget.h
     ui/BackgroundWidget.cpp
+    ui/BlurWidget.h
+    ui/BlurWidget.cpp
     ui/MainWindow.h
     ui/MainWindow.cpp
     ui/InstanceWindow.h

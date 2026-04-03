@@ -38,16 +38,13 @@ QMainWindow, QWidget#centralWidget, QScrollArea, QSplitter, QStackedWidget {
 }
 
 /* =====================================================
-    FLOATING PILL NAVBAR
+    FLOATING PILL NAVBAR (BlurWidget handles background painting)
     ===================================================== */
-QWidget#pillNavBar {
-    background-color: rgba(60, 55, 45, 153);
+BlurWidget#pillNavBar {
     border: none;
-    border-radius: 9999px;
-    padding: 0;
 }
 
-QWidget#pillNavBar QPushButton {
+BlurWidget#pillNavBar QPushButton {
     background: transparent;
     color: #D4D4D8;
     font-size: 14px;
@@ -59,11 +56,11 @@ QWidget#pillNavBar QPushButton {
     line-height: 1.4;
 }
 
-QWidget#pillNavBar QPushButton:hover {
+BlurWidget#pillNavBar QPushButton:hover {
     color: #FFFFFF;
 }
 
-QWidget#pillNavBar QPushButton:checked {
+BlurWidget#pillNavBar QPushButton:checked {
     background-color: #FFFFFF;
     color: #18181B;
     font-weight: 500;
