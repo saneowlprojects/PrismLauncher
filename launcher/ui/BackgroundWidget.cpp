@@ -105,8 +105,8 @@ void BackgroundWidget::resizeEvent(QResizeEvent* event)
 void BackgroundWidget::showEvent(QShowEvent* event)
 {
     QWidget::showEvent(event);
-    // Resize to fill parent widget
-    if (parentWidget()) {
+    // Only manually resize when not managed by a layout
+    if (parentWidget() && !parentWidget()->layout()) {
         setGeometry(parentWidget()->rect());
     }
 }
@@ -118,12 +118,12 @@ bool BackgroundWidget::event(QEvent* event)
             parentWidget()->removeEventFilter(this);
         }
     } else if (event->type() == QEvent::ParentChange) {
-        if (parentWidget()) {
+        if (parentWidget() && !parentWidget()->layout()) {
             parentWidget()->installEventFilter(this);
             setGeometry(parentWidget()->rect());
         }
     } else if (event->type() == QEvent::Resize) {
-        if (parentWidget()) {
+        if (parentWidget() && !parentWidget()->layout()) {
             setGeometry(parentWidget()->rect());
         }
     }

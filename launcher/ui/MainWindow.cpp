@@ -185,6 +185,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     m_backgroundWidget = new BackgroundWidget(this->centralWidget());
     m_backgroundWidget->setObjectName("backgroundWidget");
     m_backgroundWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
+    m_backgroundWidget->setAttribute(Qt::WA_NoSystemBackground);
     m_backgroundWidget->setFocusPolicy(Qt::NoFocus);
     m_backgroundWidget->lower();
 
@@ -1902,8 +1903,8 @@ void MainWindow::setupPages() {
         homeLayout->addWidget(m_heroWidget);
     }
     
-    // Create page stack
-    m_pageStack = new QStackedWidget(this);
+    // Create page stack as a child of the background widget so wallpaper shows through
+    m_pageStack = new QStackedWidget(m_backgroundWidget);
     m_pageStack->setObjectName("pageStack");
     m_pageStack->setAttribute(Qt::WA_TranslucentBackground);
     m_pageStack->setAttribute(Qt::WA_NoSystemBackground);
@@ -1911,9 +1912,15 @@ void MainWindow::setupPages() {
     m_instancesPageIndex = m_pageStack->addWidget(m_instancesPage);
     m_pageStack->setCurrentIndex(m_homePageIndex);
     
-    // Add page stack to central layout
+    // Set up background widget layout to fill with page stack
+    auto bgLayout = new QVBoxLayout(m_backgroundWidget);
+    bgLayout->setContentsMargins(0, 0, 0, 0);
+    bgLayout->setSpacing(0);
+    bgLayout->addWidget(m_pageStack);
+    
+    // Add background widget (with page stack as child) to central layout
     if (auto layout = qobject_cast<QVBoxLayout*>(this->centralWidget()->layout())) {
-        layout->addWidget(m_pageStack);
+        layout->addWidget(m_backgroundWidget);
     }
     
     // Show appropriate page based on theme
@@ -2109,9 +2116,9 @@ void MainWindow::rebuildNavbar() {
         ui->mainToolBar->setOrientation(Qt::Horizontal);
         ui->mainToolBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-        // Insert toolbar at the very top of the central widget layout
-        if (this->centralWidget() && this->centralWidget()->layout()) {
-            if (auto layout = qobject_cast<QVBoxLayout*>(this->centralWidget()->layout())) {
+        // Insert toolbar at the very top of the background widget layout
+        if (m_backgroundWidget && m_backgroundWidget->layout()) {
+            if (auto layout = qobject_cast<QVBoxLayout*>(m_backgroundWidget->layout())) {
                 // Remove toolbar from layout first if it's already there
                 for (int i = 0; i < layout->count(); i++) {
                     if (layout->itemAt(i)->widget() == ui->mainToolBar) {
