@@ -42,31 +42,65 @@ QMainWindow, QWidget#centralWidget, QScrollArea, QSplitter, QStackedWidget {
     ===================================================== */
 QWidget#pillNavBar {
     background-color: rgba(60, 55, 45, 153);
-    border: 1px solid rgba(255, 255, 255, 15);
+    border: none;
     border-radius: 9999px;
-    margin-top: 24px;
     padding: 0;
 }
 
 QWidget#pillNavBar QPushButton {
     background: transparent;
-    color: rgba(212, 212, 216, 255);
+    color: #D4D4D8;
     font-size: 14px;
     font-weight: 500;
     padding: 8px 24px;
     border: none;
     border-radius: 9999px;
-    min-height: 32px;
+    min-height: 40px;
+    line-height: 1.4;
 }
 
 QWidget#pillNavBar QPushButton:hover {
-    color: white;
+    color: #FFFFFF;
 }
 
 QWidget#pillNavBar QPushButton:checked {
     background-color: #FFFFFF;
-    color: #18181b;
-    font-weight: 600;
+    color: #18181B;
+    font-weight: 500;
+}
+
+/* =====================================================
+    INSTANCE CONTEXT MENU (modern & minimalistic)
+    ===================================================== */
+QMenu#instanceContextMenu {
+    background-color: rgba(40, 37, 32, 245);
+    border: 1px solid rgba(255, 255, 255, 30);
+    border-radius: 12px;
+    padding: 6px;
+    font-size: 13px;
+    min-width: 200px;
+}
+
+QMenu#instanceContextMenu::item {
+    color: #D4D4D8;
+    padding: 8px 16px;
+    border-radius: 6px;
+    margin: 2px 4px;
+}
+
+QMenu#instanceContextMenu::item:selected {
+    background-color: rgba(255, 255, 255, 15);
+    color: #FFFFFF;
+}
+
+QMenu#instanceContextMenu::item:disabled {
+    color: rgba(212, 212, 216, 60);
+}
+
+QMenu#instanceContextMenu::separator {
+    height: 1px;
+    background-color: rgba(255, 255, 255, 15);
+    margin: 4px 12px;
 }
 
 /* =====================================================

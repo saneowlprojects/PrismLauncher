@@ -636,6 +636,7 @@ void MainWindow::showInstanceContextMenu(const QPoint& pos)
         }
     }
     QMenu myMenu;
+    myMenu.setObjectName("instanceContextMenu");
     myMenu.addActions(actions);
     /*
     if (onInstance)
@@ -2045,7 +2046,7 @@ void MainWindow::setupPillNavBar() {
     
     m_pillNavBar = new QWidget(this->centralWidget());
     m_pillNavBar->setObjectName("pillNavBar");
-    m_pillNavBar->setFixedHeight(48);
+    m_pillNavBar->setFixedHeight(56);
     m_pillNavBar->setAttribute(Qt::WA_TranslucentBackground);
     m_pillNavBar->raise();
     
