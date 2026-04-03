@@ -855,6 +855,11 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* ev)
     return QMainWindow::eventFilter(obj, ev);
 }
 
+void MainWindow::paintEvent(QPaintEvent* event)
+{
+    QMainWindow::paintEvent(event);
+}
+
 void MainWindow::updateNewsLabel()
 {
     if (m_newsChecker->isLoadingNews()) {
