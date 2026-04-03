@@ -820,6 +820,34 @@ void MainWindow::defaultAccountChanged()
 
 bool MainWindow::eventFilter(QObject* obj, QEvent* ev)
 {
+    if (obj == this->centralWidget() && ev->type() == QEvent::Paint) {
+        if (!m_scaledBackground.isNull()) {
+            QPainter painter(this->centralWidget());
+            painter.setRenderHint(QPainter::SmoothPixmapTransform);
+            
+            if (m_isFading) {
+                painter.setOpacity(1.0 - m_fadeProgress);
+            } else {
+                painter.setOpacity(1.0);
+            }
+            painter.drawPixmap(this->centralWidget()->rect(), m_scaledBackground);
+            
+            if (m_isFading && !m_scaledNextBackground.isNull()) {
+                painter.setOpacity(m_fadeProgress);
+                painter.drawPixmap(this->centralWidget()->rect(), m_scaledNextBackground);
+            }
+            
+            QLinearGradient gradient(this->centralWidget()->rect().topLeft(), this->centralWidget()->rect().bottomLeft());
+            gradient.setColorAt(0.0, QColor(0, 0, 0, 0));
+            gradient.setColorAt(0.3, QColor(0, 0, 0, 80));
+            gradient.setColorAt(0.6, QColor(0, 0, 0, 160));
+            gradient.setColorAt(1.0, QColor(0, 0, 0, 220));
+            painter.setOpacity(1.0);
+            painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+            painter.fillRect(this->centralWidget()->rect(), gradient);
+        }
+    }
+
     if (obj == view) {
         if (ev->type() == QEvent::KeyPress) {
             secretEventFilter->input(ev);
@@ -1864,6 +1892,8 @@ void MainWindow::setupHeroWidget() {
 }
 
 void MainWindow::setupPages() {
+    if (m_pageStack) return;
+    
     // Create the instances page container
     m_instancesPage = new QWidget(this);
     m_instancesPage->setObjectName("instancesPage");
@@ -1983,7 +2013,7 @@ void MainWindow::crossfadeToNextBackground() {
     int currentStep = 0;
     
     QTimer* fadeTimer = new QTimer(this);
-    connect(fadeTimer, &QTimer::timeout, [this, fadeTimer, steps, currentStep]() mutable {
+    connect(fadeTimer, &QTimer::timeout, [this, fadeTimer, currentStep]() mutable {
         currentStep++;
         m_fadeProgress = static_cast<double>(currentStep) / steps;
         update();
@@ -2005,37 +2035,6 @@ void MainWindow::crossfadeToNextBackground() {
 
 void MainWindow::paintEvent(QPaintEvent* event) {
     QMainWindow::paintEvent(event);
-}
-
-bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
-    if (obj == this->centralWidget() && event->type() == QEvent::Paint) {
-        if (!m_scaledBackground.isNull()) {
-            QPainter painter(this->centralWidget());
-            painter.setRenderHint(QPainter::SmoothPixmapTransform);
-            
-            if (m_isFading) {
-                painter.setOpacity(1.0 - m_fadeProgress);
-            } else {
-                painter.setOpacity(1.0);
-            }
-            painter.drawPixmap(this->centralWidget()->rect(), m_scaledBackground);
-            
-            if (m_isFading && !m_scaledNextBackground.isNull()) {
-                painter.setOpacity(m_fadeProgress);
-                painter.drawPixmap(this->centralWidget()->rect(), m_scaledNextBackground);
-            }
-            
-            QLinearGradient gradient(this->centralWidget()->rect().topLeft(), this->centralWidget()->rect().bottomLeft());
-            gradient.setColorAt(0.0, QColor(0, 0, 0, 0));
-            gradient.setColorAt(0.3, QColor(0, 0, 0, 80));
-            gradient.setColorAt(0.6, QColor(0, 0, 0, 160));
-            gradient.setColorAt(1.0, QColor(0, 0, 0, 220));
-            painter.setOpacity(1.0);
-            painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-            painter.fillRect(this->centralWidget()->rect(), gradient);
-        }
-    }
-    return QMainWindow::eventFilter(obj, event);
 }
 
 void MainWindow::updateHeroWidget() {
@@ -2143,7 +2142,7 @@ void MainWindow::rebuildNavbar() {
         ui->mainToolBar->addAction(ui->actionHelpButton);
         
         // Add spacer and accounts button
-        QWidget* spacer = new QWidget();
+        QWidget* spacer = new QWidget(ui->mainToolBar);
         spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         ui->mainToolBar->addWidget(spacer);
         ui->mainToolBar->addAction(ui->actionAccountsButton);
@@ -2184,6 +2183,11 @@ void MainWindow::rebuildNavbar() {
     
     if (ui->mainToolBar) {
         ui->mainToolBar->clear();
+        
+        // Disconnect existing connections to prevent duplicates on theme change
+        for (auto* action : ui->mainToolBar->actions()) {
+            action->disconnect();
+        }
         
         auto playAction = ui->mainToolBar->addAction("Play");
         playAction->setCheckable(true);
