@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QDirIterator>
 #include <QFileInfo>
+#include <QDebug>
 
 BackgroundWidget::BackgroundWidget(QWidget* parent)
     : QWidget(parent)
@@ -192,9 +193,12 @@ void BackgroundWidget::loadNextWallpaper()
     m_currentIndex = (m_currentIndex + 1) % m_wallpapers.size();
 
     QPixmap pix;
-    if (!pix.load(path))
+    if (!pix.load(path)) {
+        qWarning() << "BackgroundWidget: Failed to load wallpaper:" << path;
         return;
+    }
 
+    qDebug() << "BackgroundWidget: Loaded wallpaper:" << path << "size:" << pix.size();
     m_currentPixmap = scaleToSize(pix, size());
     update();
 }

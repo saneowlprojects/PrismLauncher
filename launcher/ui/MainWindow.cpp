@@ -1830,12 +1830,16 @@ void MainWindow::setupHeroWidget() {
     
     // Load backgrounds from Qt resources (embedded in binary)
     QDirIterator resourceIter(":/backgrounds", QDir::Files);
+    int resourceCount = 0;
     while (resourceIter.hasNext()) {
         resourceIter.next();
         QString filePath = resourceIter.filePath();
         // Qt resource aliases may not have extensions, so accept all files from :/backgrounds
         m_backgroundWidget->addWallpaper(filePath);
+        resourceCount++;
+        qDebug() << "MainWindow: Added wallpaper from resource:" << filePath;
     }
+    qDebug() << "MainWindow: Total wallpapers loaded from resources:" << resourceCount;
     
     // Also try loading from filesystem locations (user's own wallpapers)
     QStringList bgPaths;
