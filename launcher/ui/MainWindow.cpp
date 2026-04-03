@@ -174,6 +174,18 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     statusBar()->hide();
 
+    // Hide toolbars early in pill mode before any setup code can show them
+    bool isPill = APPLICATION->settings()->get("ApplicationTheme").toString() == "pill";
+    if (isPill) {
+        if (ui->instanceToolBar) {
+            ui->instanceToolBar->setMovable(false);
+            ui->instanceToolBar->setFloatable(false);
+            ui->instanceToolBar->hide();
+        }
+        if (ui->newsToolBar) ui->newsToolBar->hide();
+        if (ui->mainToolBar) ui->mainToolBar->hide();
+    }
+
     if (!this->centralWidget()->layout()) {
         qDebug() << "MainWindow: Creating missing central layout";
         this->centralWidget()->setLayout(new QVBoxLayout(this->centralWidget()));
