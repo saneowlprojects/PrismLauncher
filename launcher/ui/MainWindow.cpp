@@ -197,9 +197,13 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // instance toolbar stuff
     {
-        // Qt doesn't like vertical moving toolbars, so we have to force them...
-        // See https://github.com/PolyMC/PolyMC/issues/493
-        // (Removing orientation connect as it's now managed)
+        // In pill mode, completely disable the instance toolbar
+        bool isPill = APPLICATION->settings()->get("ApplicationTheme").toString() == "pill";
+        if (isPill && ui->instanceToolBar) {
+            ui->instanceToolBar->setMovable(false);
+            ui->instanceToolBar->setFloatable(false);
+            ui->instanceToolBar->clear();
+        }
 
         // if you try to add a widget to a toolbar in a .ui file
         // qt designer will delete it when you save the file >:(
@@ -228,6 +232,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         ui->instanceToolBar->addContextMenuAction(ui->instanceToolBar->toggleViewAction());
         ui->instanceToolBar->addContextMenuAction(ui->actionToggleStatusBar);
         ui->instanceToolBar->addContextMenuAction(ui->actionLockToolbars);
+
+        // Force hide again after setup in pill mode
+        if (isPill && ui->instanceToolBar) {
+            ui->instanceToolBar->hide();
+        }
     }
 
     // set the menu for the folders help, accounts, and export tool buttons
