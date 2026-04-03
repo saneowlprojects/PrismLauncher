@@ -1576,6 +1576,11 @@ void MainWindow::resizeEvent(QResizeEvent* event)
         m_heroTitle->setFont(titleFont);
     }
     
+    // Resize background widget to fill centralWidget
+    if (m_backgroundWidget) {
+        m_backgroundWidget->setGeometry(this->centralWidget()->rect());
+    }
+    
     // Reposition pill nav bar on resize
     if (m_pillNavBar) {
         positionPillNavBar();
@@ -1826,14 +1831,15 @@ void MainWindow::setupHeroWidget() {
     heroLayout->setContentsMargins(80, 40, 80, 60);
     heroLayout->setSpacing(0);
     
-    // Load backgrounds from Qt resources
+    // Load backgrounds from Qt resources (only files with "wallpaper" in name)
     QDir bgDir(":/backgrounds");
     if (bgDir.exists()) {
         int count = 0;
         for (const auto& file : bgDir.entryList(QDir::Files)) {
-            if (file.endsWith(".png", Qt::CaseInsensitive) ||
-                file.endsWith(".jpg", Qt::CaseInsensitive) ||
-                file.endsWith(".jpeg", Qt::CaseInsensitive)) {
+            if (file.contains("wallpaper", Qt::CaseInsensitive) &&
+                (file.endsWith(".png", Qt::CaseInsensitive) ||
+                 file.endsWith(".jpg", Qt::CaseInsensitive) ||
+                 file.endsWith(".jpeg", Qt::CaseInsensitive))) {
                 m_backgroundWidget->addWallpaper(":/backgrounds/" + file);
                 count++;
             }
@@ -1852,9 +1858,10 @@ void MainWindow::setupHeroWidget() {
         if (fsBgDir.exists()) {
             int count = 0;
             for (const auto& file : fsBgDir.entryList(QDir::Files)) {
-                if (file.endsWith(".png", Qt::CaseInsensitive) ||
-                    file.endsWith(".jpg", Qt::CaseInsensitive) ||
-                    file.endsWith(".jpeg", Qt::CaseInsensitive)) {
+                if (file.contains("wallpaper", Qt::CaseInsensitive) &&
+                    (file.endsWith(".png", Qt::CaseInsensitive) ||
+                     file.endsWith(".jpg", Qt::CaseInsensitive) ||
+                     file.endsWith(".jpeg", Qt::CaseInsensitive))) {
                     m_backgroundWidget->addWallpaper(fsBgDir.absoluteFilePath(file));
                     count++;
                 }
@@ -1911,8 +1918,9 @@ void MainWindow::setupPages() {
         homeLayout->addWidget(m_heroWidget);
     }
     
-    // Create page stack as a child of the background widget so wallpaper shows through
-    m_pageStack = new QStackedWidget(m_backgroundWidget);
+    // Create page stack as a sibling of backgroundWidget (not a child)
+    // so it can receive mouse events properly
+    m_pageStack = new QStackedWidget(this->centralWidget());
     m_pageStack->setObjectName("pageStack");
     m_pageStack->setAttribute(Qt::WA_TranslucentBackground);
     m_pageStack->setAttribute(Qt::WA_NoSystemBackground);
@@ -1920,16 +1928,9 @@ void MainWindow::setupPages() {
     m_instancesPageIndex = m_pageStack->addWidget(m_instancesPage);
     m_pageStack->setCurrentIndex(m_homePageIndex);
     
-    // Set up background widget layout to fill with page stack
-    auto bgLayout = new QVBoxLayout(m_backgroundWidget);
-    bgLayout->setContentsMargins(0, 0, 0, 0);
-    bgLayout->setSpacing(0);
-    bgLayout->addWidget(m_pageStack);
-    
-    // Add background widget (with page stack as child) to central layout
-    if (auto layout = qobject_cast<QVBoxLayout*>(this->centralWidget()->layout())) {
-        layout->addWidget(m_backgroundWidget);
-    }
+    // Ensure background widget stays behind the page stack
+    m_backgroundWidget->lower();
+    m_pageStack->raise();
     
     // Show appropriate page based on theme
     bool isPill = APPLICATION->settings()->get("ApplicationTheme").toString() == "pill";
