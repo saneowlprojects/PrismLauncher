@@ -2,36 +2,36 @@
 <RCC version="1.0">
     <qresource prefix="/backgrounds">
         <!-- Mascot backgrounds -->
-        <file alias="kitteh">kitteh.png</file>
-        <file alias="kitteh-xmas">kitteh-xmas.png</file>
-        <file alias="kitteh-bday">kitteh-bday.png</file>
-        <file alias="kitteh-spooky">kitteh-spooky.png</file>
-        <file alias="rory">rory.png</file>
-        <file alias="rory-xmas">rory-xmas.png</file>
-        <file alias="rory-bday">rory-bday.png</file>
-        <file alias="rory-spooky">rory-spooky.png</file>
-        <file alias="rory-flat">rory-flat.png</file>
-        <file alias="rory-flat-xmas">rory-flat-xmas.png</file>
-        <file alias="rory-flat-bday">rory-flat-bday.png</file>
-        <file alias="rory-flat-spooky">rory-flat-spooky.png</file>
+        <file alias="kitteh.png">kitteh.png</file>
+        <file alias="kitteh-xmas.png">kitteh-xmas.png</file>
+        <file alias="kitteh-bday.png">kitteh-bday.png</file>
+        <file alias="kitteh-spooky.png">kitteh-spooky.png</file>
+        <file alias="rory.png">rory.png</file>
+        <file alias="rory-xmas.png">rory-xmas.png</file>
+        <file alias="rory-bday.png">rory-bday.png</file>
+        <file alias="rory-spooky.png">rory-spooky.png</file>
+        <file alias="rory-flat.png">rory-flat.png</file>
+        <file alias="rory-flat-xmas.png">rory-flat-xmas.png</file>
+        <file alias="rory-flat-bday.png">rory-flat-bday.png</file>
+        <file alias="rory-flat-spooky.png">rory-flat-spooky.png</file>
         <!-- teawie images -->
         <!-- copyright (c) SympathyTea 2023 -->
         <!-- these are licensed under the CC BY-SA 4.0 and have been unmodified aside from downscaling -->
         <!-- the full license with appropriate notices is avalible at https://creativecommons.org/licenses/by-sa/4.0/ -->
-        <file alias="teawie">teawie.png</file>
+        <file alias="teawie.png">teawie.png</file>
         <!-- https://commons.wikimedia.org/wiki/File:Teawie.png -->
-        <file alias="teawie-xmas">teawie-xmas.png</file>
+        <file alias="teawie-xmas.png">teawie-xmas.png</file>
         <!-- https://commons.wikimedia.org/wiki/File:Teawie_Holiday.png -->
-        <file alias="teawie-bday">teawie-bday.png</file>
+        <file alias="teawie-bday.png">teawie-bday.png</file>
         <!-- https://commons.wikimedia.org/wiki/File:Teawie_Party.png -->
-        <file alias="teawie-spooky">teawie-spooky.png</file>
+        <file alias="teawie-spooky.png">teawie-spooky.png</file>
         <!-- https://commons.wikimedia.org/wiki/File:Teawie_Halloween.png -->
         
         <!-- Minecraft Wallpaper Collection -->
-        <file alias="minecraft-java">wallpaper_minecraft_java_edition_2560x1440.png</file>
-        <file alias="minecraft-burberry">wallpaper_minecraft_burberry_2560x1440.png</file>
-        <file alias="minecraft-15th">wallpaper_minecraft_15th-anniversary_2560x1440.png</file>
-        <file alias="minecraft-pc">wallpaper_minecraft_pc_bundle_2560x1440.png</file>
-        <file alias="dotnet-wallpaper">MCV_SPR26Drop_TT_DotNet_Wallpaper_2560x1440.png</file>
+        <file alias="wallpaper_minecraft_java_edition_2560x1440.png">wallpaper_minecraft_java_edition_2560x1440.png</file>
+        <file alias="wallpaper_minecraft_burberry_2560x1440.png">wallpaper_minecraft_burberry_2560x1440.png</file>
+        <file alias="wallpaper_minecraft_15th-anniversary_2560x1440.png">wallpaper_minecraft_15th-anniversary_2560x1440.png</file>
+        <file alias="wallpaper_minecraft_pc_bundle_2560x1440.png">wallpaper_minecraft_pc_bundle_2560x1440.png</file>
+        <file alias="MCV_SPR26Drop_TT_DotNet_Wallpaper_2560x1440.png">MCV_SPR26Drop_TT_DotNet_Wallpaper_2560x1440.png</file>
     </qresource>
 </RCC>
