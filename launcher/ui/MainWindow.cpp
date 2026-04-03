@@ -1914,6 +1914,17 @@ void MainWindow::updateBackground() {
 void MainWindow::crossfadeToNextBackground() {
     if (m_isFading) return;
     
+    if (m_scaledBackground.isNull()) {
+        QString bgPath = m_wallpapers[m_currentWallpaperIndex];
+        m_currentWallpaperIndex = (m_currentWallpaperIndex + 1) % m_wallpapers.size();
+        
+        if (!m_currentBackground.load(bgPath)) return;
+        
+        m_scaledBackground = m_currentBackground.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+        update();
+        return;
+    }
+    
     QString bgPath = m_wallpapers[m_currentWallpaperIndex];
     m_currentWallpaperIndex = (m_currentWallpaperIndex + 1) % m_wallpapers.size();
     
