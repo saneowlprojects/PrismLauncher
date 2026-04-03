@@ -210,45 +210,39 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // instance toolbar stuff
     {
-        // In pill mode, completely disable the instance toolbar
         bool isPill = APPLICATION->settings()->get("ApplicationTheme").toString() == "pill";
-        if (isPill && ui->instanceToolBar) {
-            ui->instanceToolBar->setMovable(false);
-            ui->instanceToolBar->setFloatable(false);
-            ui->instanceToolBar->clear();
-        }
 
-        // if you try to add a widget to a toolbar in a .ui file
-        // qt designer will delete it when you save the file >:(
-        changeIconButton = new LabeledToolButton(this);
-        changeIconButton->setObjectName(QStringLiteral("changeIconButton"));
-        changeIconButton->setIcon(QIcon::fromTheme("news"));
-        changeIconButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        connect(changeIconButton, &QToolButton::clicked, this, &MainWindow::on_actionChangeInstIcon_triggered);
-        ui->instanceToolBar->insertWidgetBefore(ui->actionLaunchInstance, changeIconButton);
-
-        renameButton = new LabeledToolButton(this);
-        renameButton->setObjectName(QStringLiteral("renameButton"));
-        renameButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        connect(renameButton, &QToolButton::clicked, this, &MainWindow::on_actionRenameInstance_triggered);
-        ui->instanceToolBar->insertWidgetBefore(ui->actionLaunchInstance, renameButton);
-
-        ui->instanceToolBar->insertSeparator(ui->actionLaunchInstance);
-
-        // restore the instance toolbar settings
-        auto const setting_name = QString("WideBarVisibility_%1").arg(ui->instanceToolBar->objectName());
-        instanceToolbarSetting = APPLICATION->settings()->getOrRegisterSetting(setting_name);
-
-        ui->instanceToolBar->setVisibilityState(QByteArray::fromBase64(instanceToolbarSetting->get().toString().toUtf8()));
-
-        ui->instanceToolBar->addContextMenuAction(ui->newsToolBar->toggleViewAction());
-        ui->instanceToolBar->addContextMenuAction(ui->instanceToolBar->toggleViewAction());
-        ui->instanceToolBar->addContextMenuAction(ui->actionToggleStatusBar);
-        ui->instanceToolBar->addContextMenuAction(ui->actionLockToolbars);
-
-        // Force hide again after setup in pill mode
+        // In pill mode, skip toolbar setup entirely and just hide it
         if (isPill && ui->instanceToolBar) {
             ui->instanceToolBar->hide();
+        } else {
+            // if you try to add a widget to a toolbar in a .ui file
+            // qt designer will delete it when you save the file >:(
+            changeIconButton = new LabeledToolButton(this);
+            changeIconButton->setObjectName(QStringLiteral("changeIconButton"));
+            changeIconButton->setIcon(QIcon::fromTheme("news"));
+            changeIconButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+            connect(changeIconButton, &QToolButton::clicked, this, &MainWindow::on_actionChangeInstIcon_triggered);
+            ui->instanceToolBar->insertWidgetBefore(ui->actionLaunchInstance, changeIconButton);
+
+            renameButton = new LabeledToolButton(this);
+            renameButton->setObjectName(QStringLiteral("renameButton"));
+            renameButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+            connect(renameButton, &QToolButton::clicked, this, &MainWindow::on_actionRenameInstance_triggered);
+            ui->instanceToolBar->insertWidgetBefore(ui->actionLaunchInstance, renameButton);
+
+            ui->instanceToolBar->insertSeparator(ui->actionLaunchInstance);
+
+            // restore the instance toolbar settings
+            auto const setting_name = QString("WideBarVisibility_%1").arg(ui->instanceToolBar->objectName());
+            instanceToolbarSetting = APPLICATION->settings()->getOrRegisterSetting(setting_name);
+
+            ui->instanceToolBar->setVisibilityState(QByteArray::fromBase64(instanceToolbarSetting->get().toString().toUtf8()));
+
+            ui->instanceToolBar->addContextMenuAction(ui->newsToolBar->toggleViewAction());
+            ui->instanceToolBar->addContextMenuAction(ui->instanceToolBar->toggleViewAction());
+            ui->instanceToolBar->addContextMenuAction(ui->actionToggleStatusBar);
+            ui->instanceToolBar->addContextMenuAction(ui->actionLockToolbars);
         }
     }
 
