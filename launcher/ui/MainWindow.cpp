@@ -50,6 +50,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QUrl>
+#include <QDesktopServices>
 #include <QVariant>
 
 #include <QAction>
@@ -1774,18 +1775,13 @@ void MainWindow::refreshCurrentInstance()
 void MainWindow::setupHeroWidget() {
     m_heroWidget = new QWidget(this);
     m_heroWidget->setObjectName("heroWidget");
-    m_heroWidget->setMinimumHeight(500);
     auto heroLayout = new QVBoxLayout(m_heroWidget);
-    
-    m_heroBadge = new QLabel("SURVIVAL • 45 MODS", m_heroWidget);
-    m_heroBadge->setObjectName("heroBadge");
-    m_heroBadge->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     
     m_heroTitle = new QLabel("Resume Play", m_heroWidget);
     m_heroTitle->setObjectName("heroTitle");
     m_heroTitle->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     
-    m_heroDescription = new QLabel("Continue your adventure in Minecraft. Last played 2 hours ago.", m_heroWidget);
+    m_heroDescription = new QLabel("Select an instance to get started.", m_heroWidget);
     m_heroDescription->setObjectName("heroDescription");
     m_heroDescription->setWordWrap(true);
     m_heroDescription->setAlignment(Qt::AlignLeft | Qt::AlignTop);
@@ -1815,33 +1811,18 @@ void MainWindow::setupHeroWidget() {
     buttonLayout->addStretch(1);
     buttonLayout->setSpacing(16);
 
-    heroLayout->addStretch(2);
-    heroLayout->addWidget(m_heroBadge);
-    heroLayout->addSpacing(16);
+    heroLayout->addStretch(1);
     heroLayout->addWidget(m_heroTitle);
     heroLayout->addSpacing(12);
     heroLayout->addWidget(m_heroDescription);
     heroLayout->addSpacing(32);
     heroLayout->addLayout(buttonLayout);
-    heroLayout->addStretch(1);
+    heroLayout->addSpacing(80);
     heroLayout->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    heroLayout->setContentsMargins(80, 60, 80, 60);
+    heroLayout->setContentsMargins(80, 40, 80, 80);
     heroLayout->setSpacing(0);
     
-    // Load backgrounds from Qt resources (embedded in binary)
-    QDirIterator resourceIter(":/backgrounds", QDir::Files);
-    int resourceCount = 0;
-    while (resourceIter.hasNext()) {
-        resourceIter.next();
-        QString filePath = resourceIter.filePath();
-        // Qt resource aliases may not have extensions, so accept all files from :/backgrounds
-        m_backgroundWidget->addWallpaper(filePath);
-        resourceCount++;
-        qDebug() << "MainWindow: Added wallpaper from resource:" << filePath;
-    }
-    qDebug() << "MainWindow: Total wallpapers loaded from resources:" << resourceCount;
-    
-    // Also try loading from filesystem locations (user's own wallpapers)
+    // Load backgrounds ONLY from filesystem /backgrounds folder (not Qt resources with cat images)
     QStringList bgPaths;
     bgPaths << APPLICATION->root() + "/backgrounds";
     bgPaths << QApplication::applicationDirPath() + "/backgrounds";
@@ -1850,11 +1831,16 @@ void MainWindow::setupHeroWidget() {
     for (const auto& path : bgPaths) {
         QDir bgDir(path);
         if (bgDir.exists()) {
+            int count = 0;
             for (const auto& file : bgDir.entryList(QDir::Files)) {
-                if (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg")) {
+                if (file.endsWith(".png", Qt::CaseInsensitive) ||
+                    file.endsWith(".jpg", Qt::CaseInsensitive) ||
+                    file.endsWith(".jpeg", Qt::CaseInsensitive)) {
                     m_backgroundWidget->addWallpaper(bgDir.absoluteFilePath(file));
+                    count++;
                 }
             }
+            qDebug() << "MainWindow: Loaded" << count << "wallpapers from" << path;
             break;
         }
     }
@@ -1950,55 +1936,13 @@ void MainWindow::updateHeroWidget() {
     if (m_selectedInstance) {
         m_heroTitle->setText(tr("Resume Play"));
         
-        int modCount = 0;
-        QString version = "Unknown";
-        auto minecraftInst = dynamic_cast<MinecraftInstance*>(m_selectedInstance);
-        if (minecraftInst) {
-            if (auto modList = minecraftInst->loaderModList()) {
-                for (auto* mod : modList->allResources()) {
-                    if (mod && mod->enabled()) modCount++;
-                }
-            }
-            version = minecraftInst->getPackProfile()->getComponentVersion("net.minecraft");
-        }
-
-        // Badge: TYPE • [N] mods
-        QString type = "VANILLA";
-        if (minecraftInst) {
-            auto profile = minecraftInst->getPackProfile();
-            bool hasLoader = !profile->getComponentVersion("net.fabricmc.fabric-loader").isEmpty()
-                          || !profile->getComponentVersion("net.minecraftforge").isEmpty()
-                          || !profile->getComponentVersion("net.neoforged").isEmpty()
-                          || !profile->getComponentVersion("org.quiltmc.quilt-loader").isEmpty();
-            if (hasLoader && modCount > 0) type = "MODPACK";
-            else if (hasLoader) type = "MODDED";
-        }
-        if (m_selectedInstance->instanceType() == "Legacy") type = "LEGACY";
-        
-        m_heroBadge->setText(QString("%1 • %2 MODS").arg(type).arg(modCount));
-        
-        // Last played relative time
-        qint64 lastLaunch = m_selectedInstance->lastLaunch();
-        QString timeStr = tr("never");
-        if (lastLaunch > 0) {
-            qint64 diff = QDateTime::currentMSecsSinceEpoch() - lastLaunch;
-            if (diff < 60000LL) timeStr = tr("just now");
-            else if (diff < 3600000LL) timeStr = tr("%1 minutes ago").arg(diff / 60000LL);
-            else if (diff < 86400000LL) timeStr = tr("%1 hours ago").arg(diff / 3600000LL);
-            else timeStr = tr("%1 days ago").arg(diff / 86400000LL);
-        }
-
-        m_heroDescription->setText(QString("Continue your adventure in %1 %2. Last played %3.")
-            .arg(m_selectedInstance->name())
-            .arg(version)
-            .arg(timeStr));
+        m_heroDescription->setText(QString("Continue your adventure in %1.").arg(m_selectedInstance->name()));
             
         m_heroButton->setEnabled(true);
         m_heroMoreButton->setVisible(true);
     } else {
         m_heroTitle->setText(tr("Prism Launcher"));
-        m_heroBadge->setText(tr("NO SELECTION"));
-        m_heroDescription->setText(tr("Select an instance below to view details."));
+        m_heroDescription->setText(tr("Select an instance to get started."));
         m_heroButton->setEnabled(false);
         m_heroMoreButton->setVisible(false);
     }
@@ -2048,6 +1992,9 @@ void MainWindow::rebuildNavbar() {
         if (ui->newsToolBar) ui->newsToolBar->show();
         if (statusBar()) statusBar()->show();
 
+        // Hide pill nav bar in non-pill mode
+        if (m_pillNavBar) m_pillNavBar->hide();
+
         // In non-pill mode, show instances page
         if (m_pageStack) {
             m_pageStack->setCurrentIndex(m_instancesPageIndex);
@@ -2057,91 +2004,101 @@ void MainWindow::rebuildNavbar() {
         return;
     }
 
+    // Pill mode: hide all default toolbars
     this->setAttribute(Qt::WA_NoSystemBackground, true);
     if (this->centralWidget()) {
         this->centralWidget()->setAttribute(Qt::WA_TranslucentBackground);
         this->centralWidget()->setAutoFillBackground(false);
     }
     
-    // Hide sidebars and status bar in pill mode
-    if (ui->instanceToolBar) {
-        ui->instanceToolBar->hide();
-        ui->instanceToolBar->setVisible(false);
-    }
-    if (ui->newsToolBar) {
-        ui->newsToolBar->hide();
-        ui->newsToolBar->setVisible(false);
-    }
+    if (ui->instanceToolBar) ui->instanceToolBar->hide();
+    if (ui->newsToolBar) ui->newsToolBar->hide();
     if (statusBar()) statusBar()->hide();
+    if (ui->mainToolBar) ui->mainToolBar->hide();
+
+    // Create pill nav bar
+    setupPillNavBar();
+}
+
+void MainWindow::setupPillNavBar() {
+    if (m_pillNavBar) return; // already created
     
-    if (ui->mainToolBar) {
-        ui->mainToolBar->clear();
-        
-        // Disconnect existing connections to prevent duplicates on theme change
-        for (auto* action : ui->mainToolBar->actions()) {
-            action->disconnect();
+    // Create the pill container
+    m_pillNavBar = new QWidget(m_backgroundWidget);
+    m_pillNavBar->setObjectName("pillNavBar");
+    m_pillNavBar->setFixedHeight(48);
+    m_pillNavBar->setAttribute(Qt::WA_TranslucentBackground);
+    
+    auto navLayout = new QHBoxLayout(m_pillNavBar);
+    navLayout->setContentsMargins(6, 6, 6, 6);
+    navLayout->setSpacing(4);
+    
+    m_navButtonGroup = new QButtonGroup(this);
+    m_navButtonGroup->setExclusive(true);
+    
+    m_navPlayBtn = new QPushButton("Play");
+    m_navPlayBtn->setObjectName("navPlayBtn");
+    m_navPlayBtn->setCheckable(true);
+    m_navPlayBtn->setChecked(true);
+    
+    m_navInstancesBtn = new QPushButton("Instances");
+    m_navInstancesBtn->setObjectName("navInstancesBtn");
+    m_navInstancesBtn->setCheckable(true);
+    
+    m_navModsBtn = new QPushButton("Mods");
+    m_navModsBtn->setObjectName("navModsBtn");
+    m_navModsBtn->setCheckable(true);
+    
+    m_navSettingsBtn = new QPushButton("Settings");
+    m_navSettingsBtn->setObjectName("navSettingsBtn");
+    m_navSettingsBtn->setCheckable(true);
+    
+    navLayout->addWidget(m_navPlayBtn);
+    navLayout->addWidget(m_navInstancesBtn);
+    navLayout->addWidget(m_navModsBtn);
+    navLayout->addWidget(m_navSettingsBtn);
+    
+    m_navButtonGroup->addButton(m_navPlayBtn, 0);
+    m_navButtonGroup->addButton(m_navInstancesBtn, 1);
+    m_navButtonGroup->addButton(m_navModsBtn, 2);
+    m_navButtonGroup->addButton(m_navSettingsBtn, 3);
+    
+    connect(m_navButtonGroup, QOverload<int>::of(&QButtonGroup::buttonClicked), this, &MainWindow::switchNavPage);
+    
+    // Insert at top of background widget layout
+    if (auto layout = qobject_cast<QVBoxLayout*>(m_backgroundWidget->layout())) {
+        layout->insertWidget(0, m_pillNavBar);
+        layout->setAlignment(m_pillNavBar, Qt::AlignHCenter | Qt::AlignTop);
+    }
+}
+
+void MainWindow::switchNavPage(int index) {
+    // Update button checked states
+    m_navPlayBtn->setChecked(index == 0);
+    m_navInstancesBtn->setChecked(index == 1);
+    m_navModsBtn->setChecked(index == 2);
+    m_navSettingsBtn->setChecked(index == 3);
+    
+    switch (index) {
+    case 0: // Play
+        showHomePage();
+        break;
+    case 1: // Instances
+        showInstancesPage();
+        break;
+    case 2: // Mods
+        // Open central mods folder
+        if (APPLICATION && APPLICATION->settings()) {
+            QString modsPath = APPLICATION->settings()->get("CentralModsDir").toString();
+            QDesktopServices::openUrl(QUrl::fromLocalFile(modsPath));
         }
-        
-        auto playAction = ui->mainToolBar->addAction("Play");
-        playAction->setCheckable(true);
-        playAction->setChecked(true);
-        connect(playAction, &QAction::triggered, this, [this, playAction]() {
-            for (auto* action : ui->mainToolBar->actions()) {
-                if (action != playAction) action->setChecked(false);
-            }
-            playAction->setChecked(true);
-            showHomePage();
-        });
-        
-        auto instancesAction = ui->mainToolBar->addAction("Instances");
-        instancesAction->setCheckable(true);
-        connect(instancesAction, &QAction::triggered, this, [this, instancesAction]() {
-            for (auto* action : ui->mainToolBar->actions()) {
-                if (action != instancesAction) action->setChecked(false);
-            }
-            instancesAction->setChecked(true);
-            showInstancesPage();
-            if (view) view->setFocus();
-        });
-
-        auto addAction = ui->mainToolBar->addAction("Add Instance");
-        connect(addAction, &QAction::triggered, this, &MainWindow::on_actionAddInstance_triggered);
-        
-        auto modsAction = ui->mainToolBar->addAction("Mods");
-        connect(modsAction, &QAction::triggered, this, &MainWindow::on_actionViewCentralModsFolder_triggered);
-        
-        auto settingsAction = ui->mainToolBar->addAction("Settings");
-        connect(settingsAction, &QAction::triggered, this, &MainWindow::on_actionSettings_triggered);
-
-        ui->mainToolBar->setObjectName("mainToolBar");
-        ui->mainToolBar->setMovable(false);
-        ui->mainToolBar->setFloatable(false);
-        ui->mainToolBar->setOrientation(Qt::Horizontal);
-        ui->mainToolBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-
-        // Insert toolbar at the very top of the background widget layout
-        if (m_backgroundWidget && m_backgroundWidget->layout()) {
-            if (auto layout = qobject_cast<QVBoxLayout*>(m_backgroundWidget->layout())) {
-                // Remove toolbar from layout first if it's already there
-                for (int i = 0; i < layout->count(); i++) {
-                    if (layout->itemAt(i)->widget() == ui->mainToolBar) {
-                        layout->removeWidget(ui->mainToolBar);
-                        break;
-                    }
-                }
-                layout->insertWidget(0, ui->mainToolBar);
-                layout->setAlignment(ui->mainToolBar, Qt::AlignHCenter | Qt::AlignTop);
-            }
-        }
-
-        // Style the play button specially
-        QTimer::singleShot(100, this, [this, playAction]() {
-            if (!ui || !ui->mainToolBar || !playAction) return;
-            if (auto btn = dynamic_cast<QWidget*>(ui->mainToolBar->widgetForAction(playAction))) {
-                btn->setObjectName("playButton");
-                btn->style()->unpolish(btn);
-                btn->style()->polish(btn);
-            }
-        });
+        // Switch back to play after opening
+        m_navButtonGroup->button(0)->setChecked(true);
+        break;
+    case 3: // Settings
+        on_actionSettings_triggered();
+        // Switch back to play after opening
+        m_navButtonGroup->button(0)->setChecked(true);
+        break;
     }
 }

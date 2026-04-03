@@ -207,5 +207,5 @@ QPixmap BackgroundWidget::scaleToSize(const QPixmap& source, const QSize& sz) co
 {
     if (sz.isEmpty())
         return source;
-    return source.scaled(sz, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+    return source.scaled(sz, Qt::KeepAspectRatioByExpanding, Qt::FastTransformation);
 }

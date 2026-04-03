@@ -40,71 +40,40 @@ QMainWindow, QWidget#centralWidget, QScrollArea, QSplitter, QStackedWidget {
 /* =====================================================
     FLOATING PILL NAVBAR
     ===================================================== */
-QToolBar#mainToolBar {
-    background-color: rgba(30, 30, 30, 180);
-    border: 1px solid rgba(255, 255, 255, 20);
+QWidget#pillNavBar {
+    background-color: rgba(60, 55, 45, 153);
+    border: 1px solid rgba(255, 255, 255, 15);
     border-radius: 9999px;
-    margin-top: 12px;
-    padding: 6px 10px;
-    spacing: 6px;
-    min-height: 44px;
+    margin-top: 24px;
+    padding: 0;
 }
 
-QToolBar#mainToolBar QToolButton {
+QWidget#pillNavBar QPushButton {
     background: transparent;
-    color: rgba(255, 255, 255, 160);
+    color: rgba(212, 212, 216, 255);
     font-size: 14px;
     font-weight: 500;
-    padding: 8px 18px;
+    padding: 8px 24px;
     border: none;
     border-radius: 9999px;
     min-height: 32px;
 }
 
-QToolBar#mainToolBar QToolButton:hover {
+QWidget#pillNavBar QPushButton:hover {
     color: white;
-    background: rgba(255, 255, 255, 15);
 }
 
-QToolBar#mainToolBar QToolButton:pressed {
-    color: white;
-    background: rgba(255, 255, 255, 25);
-}
-
-QToolBar#mainToolBar QToolButton:checked {
-    background-color: rgba(255, 255, 255, 95);
-    color: black;
+QWidget#pillNavBar QPushButton:checked {
+    background-color: #FFFFFF;
+    color: #18181b;
     font-weight: 600;
-}
-
-QToolBar#mainToolBar QToolButton#playButton {
-    background-color: rgba(255, 255, 255, 95);
-    color: black;
-    font-weight: 600;
-}
-
-QToolBar#mainToolBar QToolButton#playButton:hover {
-    background-color: rgba(255, 255, 255, 110);
 }
 
 /* =====================================================
-   HERO SECTION
-   ===================================================== */
+    HERO SECTION
+    ===================================================== */
 QWidget#heroWidget {
     background: transparent;
-}
-
-#heroBadge {
-    background-color: rgba(255, 255, 255, 20);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 30);
-    border-radius: 9999px;
-    padding: 6px 16px;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    min-width: 120px;
 }
 
 #heroTitle {

@@ -48,6 +48,7 @@
 #include <QGraphicsOpacityEffect>
 #include <QPropertyAnimation>
 #include <QStackedWidget>
+#include <QButtonGroup>
 
 #include "BaseInstance.h"
 #include "minecraft/auth/MinecraftAccount.h"
@@ -259,15 +260,23 @@ class MainWindow : public QMainWindow {
     // Apple TV Hero Section & Wallpapers
     BackgroundWidget* m_backgroundWidget = nullptr;
     QWidget* m_heroWidget = nullptr;
-    QLabel* m_heroBadge = nullptr;
     QLabel* m_heroTitle = nullptr;
     QLabel* m_heroDescription = nullptr;
     QPushButton* m_heroButton = nullptr;
     QPushButton* m_heroMoreButton = nullptr;
-    QLabel* m_otherInstancesLabel = nullptr;
     void setupHeroWidget();
     void updateHeroWidget();
     void rebuildNavbar();
+    
+    // Pill navigation bar
+    QWidget* m_pillNavBar = nullptr;
+    QButtonGroup* m_navButtonGroup = nullptr;
+    QPushButton* m_navPlayBtn = nullptr;
+    QPushButton* m_navInstancesBtn = nullptr;
+    QPushButton* m_navModsBtn = nullptr;
+    QPushButton* m_navSettingsBtn = nullptr;
+    void setupPillNavBar();
+    void switchNavPage(int index);
     
     // Page navigation
     QStackedWidget* m_pageStack = nullptr;
