@@ -1860,40 +1860,64 @@ void MainWindow::setupHeroWidget() {
 }
 
 void MainWindow::setupPages() {
-    // Create a header label for instances page (hidden by default)
-    m_instancesHeader = new QLabel(tr("All Instances"), this);
+    // Create the instances page container
+    m_instancesPage = new QWidget(this);
+    m_instancesPage->setObjectName("instancesPage");
+    auto instancesLayout = new QVBoxLayout(m_instancesPage);
+    instancesLayout->setContentsMargins(0, 0, 0, 0);
+    instancesLayout->setSpacing(0);
+    
+    // Create header
+    m_instancesHeader = new QLabel(tr("All Instances"), m_instancesPage);
     m_instancesHeader->setObjectName("instancesHeader");
     m_instancesHeader->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    m_instancesHeader->setVisible(false);
+    instancesLayout->addWidget(m_instancesHeader);
     
-    // Insert header before the view in the layout
-    if (auto layout = this->centralWidget()->layout()) {
-        // Find position of view
-        int viewIndex = -1;
-        for (int i = 0; i < layout->count(); i++) {
-            if (layout->itemAt(i)->widget() == view) {
-                viewIndex = i;
-                break;
-            }
-        }
-        // Insert header before view
-        if (viewIndex > 0) {
-            if (auto boxLayout = qobject_cast<QBoxLayout*>(layout)) {
-                boxLayout->insertWidget(viewIndex, m_instancesHeader);
-            }
-        }
+    // Add the instance view to the instances page
+    view->setParent(m_instancesPage);
+    instancesLayout->addWidget(view);
+    
+    // Create the home page container
+    m_homePage = new QWidget(this);
+    m_homePage->setObjectName("homePage");
+    auto homeLayout = new QVBoxLayout(m_homePage);
+    homeLayout->setContentsMargins(0, 0, 0, 0);
+    homeLayout->setSpacing(0);
+    
+    // Move hero widget to home page
+    if (m_heroWidget) {
+        m_heroWidget->setParent(m_homePage);
+        homeLayout->addWidget(m_heroWidget);
+    }
+    
+    // Create page stack
+    m_pageStack = new QStackedWidget(this);
+    m_pageStack->setObjectName("pageStack");
+    m_homePageIndex = m_pageStack->addWidget(m_homePage);
+    m_instancesPageIndex = m_pageStack->addWidget(m_instancesPage);
+    m_pageStack->setCurrentIndex(m_homePageIndex);
+    
+    // Add page stack to central layout
+    if (auto layout = qobject_cast<QVBoxLayout*>(this->centralWidget()->layout())) {
+        layout->addWidget(m_pageStack);
+    }
+    
+    // Show appropriate page based on theme
+    bool isPill = APPLICATION->settings()->get("ApplicationTheme").toString() == "pill";
+    if (isPill) {
+        m_pageStack->setCurrentIndex(m_homePageIndex);
+    } else {
+        m_pageStack->setCurrentIndex(m_instancesPageIndex);
     }
 }
 
 void MainWindow::showHomePage() {
-    if (m_heroWidget) m_heroWidget->setVisible(true);
-    if (m_instancesHeader) m_instancesHeader->setVisible(false);
+    if (m_pageStack) m_pageStack->setCurrentIndex(m_homePageIndex);
     updateHeroWidget();
 }
 
 void MainWindow::showInstancesPage() {
-    if (m_heroWidget) m_heroWidget->setVisible(false);
-    if (m_instancesHeader) m_instancesHeader->setVisible(true);
+    if (m_pageStack) m_pageStack->setCurrentIndex(m_instancesPageIndex);
     if (view) view->setFocus();
 }
 
@@ -1996,8 +2020,6 @@ void MainWindow::paintEvent(QPaintEvent* event) {
 
 void MainWindow::updateHeroWidget() {
     bool isPill = APPLICATION->settings()->get("ApplicationTheme").toString() == "pill";
-    if (m_heroWidget) m_heroWidget->setVisible(isPill);
-    if (m_otherInstancesLabel) m_otherInstancesLabel->setVisible(isPill);
     
     if (!isPill) {
         if (m_wallpaperTimer) m_wallpaperTimer->stop();
@@ -2181,8 +2203,16 @@ void MainWindow::rebuildNavbar() {
         ui->mainToolBar->setOrientation(Qt::Horizontal);
         ui->mainToolBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
+        // Insert toolbar at the very top of the central widget layout
         if (this->centralWidget() && this->centralWidget()->layout()) {
             if (auto layout = qobject_cast<QVBoxLayout*>(this->centralWidget()->layout())) {
+                // Remove toolbar from layout first if it's already there
+                for (int i = 0; i < layout->count(); i++) {
+                    if (layout->itemAt(i)->widget() == ui->mainToolBar) {
+                        layout->removeWidget(ui->mainToolBar);
+                        break;
+                    }
+                }
                 layout->insertWidget(0, ui->mainToolBar);
                 layout->setAlignment(ui->mainToolBar, Qt::AlignHCenter | Qt::AlignTop);
             }

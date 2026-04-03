@@ -38,42 +38,53 @@ QMainWindow, QWidget#centralWidget, QScrollArea, QSplitter, QStackedWidget {
 }
 
 /* =====================================================
-   FLOATING PILL NAVBAR
-   ===================================================== */
+    FLOATING PILL NAVBAR
+    ===================================================== */
 QToolBar#mainToolBar {
-    background-color: rgba(0, 0, 0, 50);
-    border: 1px solid rgba(255, 255, 255, 25);
+    background-color: rgba(30, 30, 30, 180);
+    border: 1px solid rgba(255, 255, 255, 20);
     border-radius: 9999px;
-    margin-top: 20px;
-    padding: 4px 8px;
-    spacing: 4px;
-    min-height: 36px;
+    margin-top: 12px;
+    padding: 6px 10px;
+    spacing: 6px;
+    min-height: 44px;
 }
 
 QToolBar#mainToolBar QToolButton {
     background: transparent;
-    color: rgba(255, 255, 255, 150);
-    font-size: 13px;
+    color: rgba(255, 255, 255, 160);
+    font-size: 14px;
     font-weight: 500;
-    padding: 6px 14px;
+    padding: 8px 18px;
     border: none;
     border-radius: 9999px;
-    min-height: 28px;
+    min-height: 32px;
 }
 
 QToolBar#mainToolBar QToolButton:hover {
     color: white;
-    background: rgba(255, 255, 255, 12);
+    background: rgba(255, 255, 255, 15);
+}
+
+QToolBar#mainToolBar QToolButton:pressed {
+    color: white;
+    background: rgba(255, 255, 255, 25);
 }
 
 QToolBar#mainToolBar QToolButton:checked {
-    background-color: white;
+    background-color: rgba(255, 255, 255, 95);
     color: black;
+    font-weight: 600;
 }
 
 QToolBar#mainToolBar QToolButton#playButton {
-    background-color: white;
+    background-color: rgba(255, 255, 255, 95);
     color: black;
+    font-weight: 600;
+}
+
+QToolBar#mainToolBar QToolButton#playButton:hover {
+    background-color: rgba(255, 255, 255, 110);
 }
 
 /* =====================================================
@@ -153,13 +164,14 @@ QWidget#heroWidget {
 }
 
 /* =====================================================
-   INSTANCES PAGE HEADER
-   ===================================================== */
+    INSTANCES PAGE HEADER
+    ===================================================== */
 #instancesHeader {
     color: white;
-    font-size: 36px;
+    font-size: 34px;
     font-weight: 600;
-    margin-top: 40px;
+    margin-top: 24px;
+    margin-bottom: 16px;
     margin-left: 80px !important;
     margin-right: 80px !important;
 }
@@ -173,13 +185,14 @@ QWidget#heroWidget {
 }
 
 /* =====================================================
-   INSTANCE CARDS
-   ===================================================== */
+    INSTANCE CARDS
+    ===================================================== */
 InstanceView {
     background: transparent !important;
     border: none;
     padding-left: 80px !important;
     padding-right: 80px !important;
+    padding-top: 8px !important;
     padding-bottom: 80px !important;
 }
 
