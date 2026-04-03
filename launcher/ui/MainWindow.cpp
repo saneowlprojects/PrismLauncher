@@ -191,9 +191,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     m_backgroundWidget->lower();
 
     qDebug() << "MainWindow: Rebuilding Navbar";
-    m_otherInstancesLabel = new QLabel(tr("Other Instances"), this);
-    m_otherInstancesLabel->setObjectName("otherInstancesLabel");
-    m_otherInstancesLabel->setVisible(false);
+
 
     this->rebuildNavbar();
 
@@ -2063,7 +2061,10 @@ void MainWindow::setupPillNavBar() {
     m_navButtonGroup->addButton(m_navModsBtn, 2);
     m_navButtonGroup->addButton(m_navSettingsBtn, 3);
     
-    connect(m_navButtonGroup, QOverload<int>::of(&QButtonGroup::buttonClicked), this, &MainWindow::switchNavPage);
+    connect(m_navButtonGroup, &QButtonGroup::buttonClicked, this, [this](QAbstractButton* btn) {
+        int id = m_navButtonGroup->id(btn);
+        switchNavPage(id);
+    });
     
     // Insert at top of background widget layout
     if (auto layout = qobject_cast<QVBoxLayout*>(m_backgroundWidget->layout())) {
