@@ -45,6 +45,8 @@ void BackgroundWidget::stopRotation()
     }
     m_currentPixmap = QPixmap();
     m_nextPixmap = QPixmap();
+    m_originalCurrent = QPixmap();
+    m_originalNext = QPixmap();
     m_isFading = false;
     m_fadeProgress = 0.0;
     update();
@@ -58,9 +60,6 @@ void BackgroundWidget::setCrossfadeDuration(int ms)
 void BackgroundWidget::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event);
-
-    if (m_currentPixmap.isNull() && m_nextPixmap.isNull())
-        return;
 
     QPainter painter(this);
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
@@ -92,14 +91,12 @@ void BackgroundWidget::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
 
-    // Scale pixmaps to new size
-    if (!m_currentPixmap.isNull()) {
-        QPixmap orig = m_currentPixmap;
-        m_currentPixmap = scaleToSize(orig, size());
+    // Re-scale from original pixmaps to avoid quality loss from repeated scaling
+    if (!m_originalCurrent.isNull()) {
+        m_currentPixmap = scaleToSize(m_originalCurrent, size());
     }
-    if (!m_nextPixmap.isNull()) {
-        QPixmap orig = m_nextPixmap;
-        m_nextPixmap = scaleToSize(orig, size());
+    if (!m_originalNext.isNull()) {
+        m_nextPixmap = scaleToSize(m_originalNext, size());
     }
 }
 
@@ -151,6 +148,7 @@ void BackgroundWidget::rotateWallpaper()
     if (!pix.load(path))
         return;
 
+    m_originalNext = pix;
     m_nextPixmap = scaleToSize(pix, size());
 
     m_isFading = true;
@@ -171,7 +169,9 @@ void BackgroundWidget::rotateWallpaper()
             m_fadeTimer = nullptr;
             m_isFading = false;
             m_currentPixmap = m_nextPixmap;
+            m_originalCurrent = m_originalNext;
             m_nextPixmap = QPixmap();
+            m_originalNext = QPixmap();
             m_fadeProgress = 0.0;
             update();
         }
@@ -199,6 +199,7 @@ void BackgroundWidget::loadNextWallpaper()
     }
 
     qDebug() << "BackgroundWidget: Loaded wallpaper:" << path << "size:" << pix.size();
+    m_originalCurrent = pix;
     m_currentPixmap = scaleToSize(pix, size());
     update();
 }

@@ -433,6 +433,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     m_statusCenter = new QLabel(tr("Total playtime: 0s"), this);
     statusBar()->addPermanentWidget(m_statusLeft, 1);
     statusBar()->addPermanentWidget(m_statusCenter, 0);
+    statusBar()->hide();
 
     // Add "manage accounts" button, right align
     QWidget* spacer = new QWidget();
@@ -1809,15 +1810,15 @@ void MainWindow::setupHeroWidget() {
     buttonLayout->addStretch(1);
     buttonLayout->setSpacing(16);
 
-    heroLayout->addStretch(1);
+    heroLayout->addStretch(2);
     heroLayout->addWidget(m_heroTitle);
     heroLayout->addSpacing(12);
     heroLayout->addWidget(m_heroDescription);
     heroLayout->addSpacing(32);
     heroLayout->addLayout(buttonLayout);
-    heroLayout->addSpacing(80);
-    heroLayout->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    heroLayout->setContentsMargins(80, 40, 80, 80);
+    heroLayout->addSpacing(40);
+    heroLayout->setAlignment(Qt::AlignLeft | Qt::AlignBottom);
+    heroLayout->setContentsMargins(80, 40, 80, 60);
     heroLayout->setSpacing(0);
     
     // Load backgrounds ONLY from filesystem /backgrounds folder (not Qt resources with cat images)

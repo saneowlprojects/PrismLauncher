@@ -239,22 +239,9 @@ void ListViewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
         nameFont.setPixelSize(16);
         nameFont.setWeight(QFont::Bold);
         painter->setFont(nameFont);
-        QRect nameRect(cardRect.left() + 16, cardRect.bottom() - 52, cardRect.width() - 32, 24);
+        QRect nameRect(cardRect.left() + 16, cardRect.bottom() - 32, cardRect.width() - 32, 24);
         painter->drawText(nameRect, Qt::AlignLeft | Qt::AlignBottom, name);
     }
-    
-    // Metadata: version + mod count (12px, muted)
-    QString metadata = index.data(Qt::UserRole).toString();
-    if (metadata.isEmpty()) {
-        metadata = "1.20.4";
-    }
-    painter->setPen(QColor(255, 255, 255, 160));
-    QFont metaFont = opt.font;
-    metaFont.setPixelSize(12);
-    metaFont.setWeight(QFont::Normal);
-    painter->setFont(metaFont);
-    QRect metaRect(cardRect.left() + 16, cardRect.bottom() - 32, cardRect.width() - 32, 18);
-    painter->drawText(metaRect, Qt::AlignLeft | Qt::AlignBottom, metadata);
 
     // Hover-reveal play button (top-right)
     if (hovered) {

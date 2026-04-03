@@ -37,6 +37,8 @@ private:
 
     QPixmap m_currentPixmap;
     QPixmap m_nextPixmap;
+    QPixmap m_originalCurrent;
+    QPixmap m_originalNext;
 
     double m_fadeProgress = 0.0;
     bool m_isFading = false;
