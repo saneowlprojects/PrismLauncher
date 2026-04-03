@@ -64,6 +64,7 @@ class InstanceView;
 class KonamiCode;
 class InstanceTask;
 class LabeledToolButton;
+class BackgroundWidget;
 
 namespace Ui {
 class MainWindow;
@@ -256,6 +257,7 @@ class MainWindow : public QMainWindow {
     QString m_currentInstIcon;
 
     // Apple TV Hero Section & Wallpapers
+    BackgroundWidget* m_backgroundWidget = nullptr;
     QWidget* m_heroWidget = nullptr;
     QLabel* m_heroBadge = nullptr;
     QLabel* m_heroTitle = nullptr;
@@ -263,20 +265,9 @@ class MainWindow : public QMainWindow {
     QPushButton* m_heroButton = nullptr;
     QPushButton* m_heroMoreButton = nullptr;
     QLabel* m_otherInstancesLabel = nullptr;
-    QList<QString> m_wallpapers;
-    QPixmap m_currentBackground;
-    QPixmap m_scaledBackground;
-    QPixmap m_nextBackground;
-    QPixmap m_scaledNextBackground;
-    int m_currentWallpaperIndex = 0;
-    QTimer* m_wallpaperTimer = nullptr;
-    double m_fadeProgress = 0.0;
-    bool m_isFading = false;
     void setupHeroWidget();
     void updateHeroWidget();
     void rebuildNavbar();
-    void updateBackground();
-    void crossfadeToNextBackground();
     
     // Page navigation
     QStackedWidget* m_pageStack = nullptr;

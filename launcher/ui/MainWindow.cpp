@@ -44,6 +44,7 @@
 
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
+#include "BackgroundWidget.h"
 
 #include <QString>
 #include <QDir>
@@ -177,9 +178,15 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         this->centralWidget()->setLayout(new QVBoxLayout(this->centralWidget()));
     }
 
-    this->centralWidget()->installEventFilter(this);
     this->centralWidget()->setAttribute(Qt::WA_TranslucentBackground);
     this->centralWidget()->setAutoFillBackground(false);
+
+    // Create background widget as a child of centralWidget that fills the entire area
+    m_backgroundWidget = new BackgroundWidget(this->centralWidget());
+    m_backgroundWidget->setObjectName("backgroundWidget");
+    m_backgroundWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
+    m_backgroundWidget->setFocusPolicy(Qt::NoFocus);
+    m_backgroundWidget->lower();
 
     qDebug() << "MainWindow: Rebuilding Navbar";
     m_otherInstancesLabel = new QLabel(tr("Other Instances"), this);
@@ -820,34 +827,6 @@ void MainWindow::defaultAccountChanged()
 
 bool MainWindow::eventFilter(QObject* obj, QEvent* ev)
 {
-    if (obj == this->centralWidget() && ev->type() == QEvent::Paint) {
-        if (!m_scaledBackground.isNull()) {
-            QPainter painter(this->centralWidget());
-            painter.setRenderHint(QPainter::SmoothPixmapTransform);
-            
-            if (m_isFading) {
-                painter.setOpacity(1.0 - m_fadeProgress);
-            } else {
-                painter.setOpacity(1.0);
-            }
-            painter.drawPixmap(this->centralWidget()->rect(), m_scaledBackground);
-            
-            if (m_isFading && !m_scaledNextBackground.isNull()) {
-                painter.setOpacity(m_fadeProgress);
-                painter.drawPixmap(this->centralWidget()->rect(), m_scaledNextBackground);
-            }
-            
-            QLinearGradient gradient(this->centralWidget()->rect().topLeft(), this->centralWidget()->rect().bottomLeft());
-            gradient.setColorAt(0.0, QColor(0, 0, 0, 0));
-            gradient.setColorAt(0.3, QColor(0, 0, 0, 80));
-            gradient.setColorAt(0.6, QColor(0, 0, 0, 160));
-            gradient.setColorAt(1.0, QColor(0, 0, 0, 220));
-            painter.setOpacity(1.0);
-            painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-            painter.fillRect(this->centralWidget()->rect(), gradient);
-        }
-    }
-
     if (obj == view) {
         if (ev->type() == QEvent::KeyPress) {
             secretEventFilter->input(ev);
@@ -1582,13 +1561,6 @@ void MainWindow::changeEvent(QEvent* event)
 
 void MainWindow::resizeEvent(QResizeEvent* event)
 {
-    if (!m_currentBackground.isNull()) {
-        m_scaledBackground = m_currentBackground.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
-    }
-    if (!m_scaledNextBackground.isNull()) {
-        m_scaledNextBackground = m_nextBackground.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
-    }
-    
     // Scale hero title based on window width
     if (m_heroTitle) {
         int titleSize = qBound(48, width() / 18, 96);
@@ -1850,18 +1822,13 @@ void MainWindow::setupHeroWidget() {
     heroLayout->setContentsMargins(80, 60, 80, 60);
     heroLayout->setSpacing(0);
     
-    // Add hero widget to layout
-    if (auto layout = qobject_cast<QVBoxLayout*>(this->centralWidget()->layout())) {
-        layout->insertWidget(0, m_heroWidget);
-    }
-    
     // Load backgrounds from Qt resources (embedded in binary)
     QDirIterator resourceIter(":/backgrounds", QDir::Files);
     while (resourceIter.hasNext()) {
         resourceIter.next();
         QString filePath = resourceIter.filePath();
         if (filePath.endsWith(".png") || filePath.endsWith(".jpg") || filePath.endsWith(".jpeg")) {
-            m_wallpapers.append(filePath);
+            m_backgroundWidget->addWallpaper(filePath);
         }
     }
     
@@ -1876,19 +1843,14 @@ void MainWindow::setupHeroWidget() {
         if (bgDir.exists()) {
             for (const auto& file : bgDir.entryList(QDir::Files)) {
                 if (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg")) {
-                    m_wallpapers.append(bgDir.absoluteFilePath(file));
+                    m_backgroundWidget->addWallpaper(bgDir.absoluteFilePath(file));
                 }
             }
             break;
         }
     }
     
-    if (!m_wallpapers.isEmpty()) {
-        m_wallpaperTimer = new QTimer(this);
-        connect(m_wallpaperTimer, &QTimer::timeout, this, &MainWindow::updateBackground);
-        m_wallpaperTimer->start(15000);
-        updateBackground();
-    }
+    m_backgroundWidget->startRotation(15000);
 }
 
 void MainWindow::setupPages() {
@@ -1968,91 +1930,7 @@ void MainWindow::showInstancesPage() {
     if (view) view->setFocus();
 }
 
-void MainWindow::updateBackground() {
-    if (APPLICATION->settings()->get("ApplicationTheme").toString() != "pill") {
-        if (m_wallpaperTimer) m_wallpaperTimer->stop();
-        m_currentBackground = QPixmap();
-        m_scaledBackground = QPixmap();
-        update();
-        return;
-    }
-    
-    if (m_wallpapers.isEmpty()) return;
-    
-    crossfadeToNextBackground();
-}
-
-void MainWindow::crossfadeToNextBackground() {
-    if (m_isFading) return;
-    
-    if (m_scaledBackground.isNull()) {
-        QString bgPath = m_wallpapers[m_currentWallpaperIndex];
-        m_currentWallpaperIndex = (m_currentWallpaperIndex + 1) % m_wallpapers.size();
-        
-        if (!m_currentBackground.load(bgPath)) return;
-        
-        m_scaledBackground = m_currentBackground.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
-        update();
-        return;
-    }
-    
-    QString bgPath = m_wallpapers[m_currentWallpaperIndex];
-    m_currentWallpaperIndex = (m_currentWallpaperIndex + 1) % m_wallpapers.size();
-    
-    if (!m_nextBackground.load(bgPath)) return;
-    
-    m_scaledNextBackground = m_nextBackground.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
-    
-    m_isFading = true;
-    m_fadeProgress = 0.0;
-    
-    // Simple fade using timer
-    const int duration = 1500;
-    const int steps = 60;
-    const int interval = duration / steps;
-    int currentStep = 0;
-    
-    QTimer* fadeTimer = new QTimer(this);
-    connect(fadeTimer, &QTimer::timeout, [this, fadeTimer, currentStep]() mutable {
-        currentStep++;
-        m_fadeProgress = static_cast<double>(currentStep) / steps;
-        update();
-        
-        if (currentStep >= steps) {
-            fadeTimer->stop();
-            fadeTimer->deleteLater();
-            m_isFading = false;
-            m_currentBackground = m_nextBackground;
-            m_scaledBackground = m_scaledNextBackground;
-            m_nextBackground = QPixmap();
-            m_scaledNextBackground = QPixmap();
-            m_fadeProgress = 0.0;
-            update();
-        }
-    });
-    fadeTimer->start(interval);
-}
-
-void MainWindow::paintEvent(QPaintEvent* event) {
-    QMainWindow::paintEvent(event);
-}
-
 void MainWindow::updateHeroWidget() {
-    bool isPill = APPLICATION->settings()->get("ApplicationTheme").toString() == "pill";
-    
-    if (!isPill) {
-        if (m_wallpaperTimer) m_wallpaperTimer->stop();
-        m_currentBackground = QPixmap();
-        m_scaledBackground = QPixmap();
-        update();
-        return;
-    } else {
-        if (m_wallpaperTimer && !m_wallpaperTimer->isActive()) {
-            m_wallpaperTimer->start(15000);
-            updateBackground();
-        }
-    }
-
     if (!m_heroTitle || !m_heroButton) return;
     if (m_selectedInstance) {
         m_heroTitle->setText(tr("Resume Play"));

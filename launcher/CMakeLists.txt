@@ -846,6 +846,8 @@ SET(LAUNCHER_SOURCES
     # GUI - windows
     ui/GuiUtil.h
     ui/GuiUtil.cpp
+    ui/BackgroundWidget.h
+    ui/BackgroundWidget.cpp
     ui/MainWindow.h
     ui/MainWindow.cpp
     ui/InstanceWindow.h
