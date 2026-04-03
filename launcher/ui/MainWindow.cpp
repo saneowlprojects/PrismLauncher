@@ -1833,9 +1833,8 @@ void MainWindow::setupHeroWidget() {
     while (resourceIter.hasNext()) {
         resourceIter.next();
         QString filePath = resourceIter.filePath();
-        if (filePath.endsWith(".png") || filePath.endsWith(".jpg") || filePath.endsWith(".jpeg")) {
-            m_backgroundWidget->addWallpaper(filePath);
-        }
+        // Qt resource aliases may not have extensions, so accept all files from :/backgrounds
+        m_backgroundWidget->addWallpaper(filePath);
     }
     
     // Also try loading from filesystem locations (user's own wallpapers)
