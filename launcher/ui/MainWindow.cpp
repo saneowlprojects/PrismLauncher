@@ -177,6 +177,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         this->centralWidget()->setLayout(new QVBoxLayout(this->centralWidget()));
     }
 
+    this->centralWidget()->installEventFilter(this);
+    this->centralWidget()->setAttribute(Qt::WA_TranslucentBackground);
+    this->centralWidget()->setAutoFillBackground(false);
+
     qDebug() << "MainWindow: Rebuilding Navbar";
     m_otherInstancesLabel = new QLabel(tr("Other Instances"), this);
     m_otherInstancesLabel->setObjectName("otherInstancesLabel");
@@ -1863,6 +1867,8 @@ void MainWindow::setupPages() {
     // Create the instances page container
     m_instancesPage = new QWidget(this);
     m_instancesPage->setObjectName("instancesPage");
+    m_instancesPage->setAttribute(Qt::WA_TranslucentBackground);
+    m_instancesPage->setAttribute(Qt::WA_NoSystemBackground);
     auto instancesLayout = new QVBoxLayout(m_instancesPage);
     instancesLayout->setContentsMargins(0, 0, 0, 0);
     instancesLayout->setSpacing(0);
@@ -1871,21 +1877,30 @@ void MainWindow::setupPages() {
     m_instancesHeader = new QLabel(tr("All Instances"), m_instancesPage);
     m_instancesHeader->setObjectName("instancesHeader");
     m_instancesHeader->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    m_instancesHeader->setAttribute(Qt::WA_TranslucentBackground);
+    m_instancesHeader->setAttribute(Qt::WA_NoSystemBackground);
     instancesLayout->addWidget(m_instancesHeader);
     
     // Add the instance view to the instances page
-    view->setParent(m_instancesPage);
+    view->setAttribute(Qt::WA_TranslucentBackground);
+    view->setAttribute(Qt::WA_NoSystemBackground);
+    view->viewport()->setAttribute(Qt::WA_TranslucentBackground);
+    view->viewport()->setAttribute(Qt::WA_NoSystemBackground);
     instancesLayout->addWidget(view);
     
     // Create the home page container
     m_homePage = new QWidget(this);
     m_homePage->setObjectName("homePage");
+    m_homePage->setAttribute(Qt::WA_TranslucentBackground);
+    m_homePage->setAttribute(Qt::WA_NoSystemBackground);
     auto homeLayout = new QVBoxLayout(m_homePage);
     homeLayout->setContentsMargins(0, 0, 0, 0);
     homeLayout->setSpacing(0);
     
     // Move hero widget to home page
     if (m_heroWidget) {
+        m_heroWidget->setAttribute(Qt::WA_TranslucentBackground);
+        m_heroWidget->setAttribute(Qt::WA_NoSystemBackground);
         m_heroWidget->setParent(m_homePage);
         homeLayout->addWidget(m_heroWidget);
     }
@@ -1893,6 +1908,8 @@ void MainWindow::setupPages() {
     // Create page stack
     m_pageStack = new QStackedWidget(this);
     m_pageStack->setObjectName("pageStack");
+    m_pageStack->setAttribute(Qt::WA_TranslucentBackground);
+    m_pageStack->setAttribute(Qt::WA_NoSystemBackground);
     m_homePageIndex = m_pageStack->addWidget(m_homePage);
     m_instancesPageIndex = m_pageStack->addWidget(m_instancesPage);
     m_pageStack->setCurrentIndex(m_homePageIndex);
@@ -1987,35 +2004,38 @@ void MainWindow::crossfadeToNextBackground() {
 }
 
 void MainWindow::paintEvent(QPaintEvent* event) {
-    if (!m_scaledBackground.isNull()) {
-        QPainter painter(this);
-        painter.setRenderHint(QPainter::SmoothPixmapTransform);
-        
-        // Draw current background (fading out if crossfading)
-        if (m_isFading) {
-            painter.setOpacity(1.0 - m_fadeProgress);
-        } else {
-            painter.setOpacity(1.0);
-        }
-        painter.drawPixmap(this->rect(), m_scaledBackground);
-        
-        // Draw next background (fading in if crossfading)
-        if (m_isFading && !m_scaledNextBackground.isNull()) {
-            painter.setOpacity(m_fadeProgress);
-            painter.drawPixmap(this->rect(), m_scaledNextBackground);
-        }
-        
-        // Gradient overlay: translucent top → solid black bottom
-        QLinearGradient gradient(this->rect().topLeft(), this->rect().bottomLeft());
-        gradient.setColorAt(0.0, QColor(0, 0, 0, 0));
-        gradient.setColorAt(0.3, QColor(0, 0, 0, 80));
-        gradient.setColorAt(0.6, QColor(0, 0, 0, 160));
-        gradient.setColorAt(1.0, QColor(0, 0, 0, 220));
-        painter.setOpacity(1.0);
-        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-        painter.fillRect(this->rect(), gradient);
-    }
     QMainWindow::paintEvent(event);
+}
+
+bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
+    if (obj == this->centralWidget() && event->type() == QEvent::Paint) {
+        if (!m_scaledBackground.isNull()) {
+            QPainter painter(this->centralWidget());
+            painter.setRenderHint(QPainter::SmoothPixmapTransform);
+            
+            if (m_isFading) {
+                painter.setOpacity(1.0 - m_fadeProgress);
+            } else {
+                painter.setOpacity(1.0);
+            }
+            painter.drawPixmap(this->centralWidget()->rect(), m_scaledBackground);
+            
+            if (m_isFading && !m_scaledNextBackground.isNull()) {
+                painter.setOpacity(m_fadeProgress);
+                painter.drawPixmap(this->centralWidget()->rect(), m_scaledNextBackground);
+            }
+            
+            QLinearGradient gradient(this->centralWidget()->rect().topLeft(), this->centralWidget()->rect().bottomLeft());
+            gradient.setColorAt(0.0, QColor(0, 0, 0, 0));
+            gradient.setColorAt(0.3, QColor(0, 0, 0, 80));
+            gradient.setColorAt(0.6, QColor(0, 0, 0, 160));
+            gradient.setColorAt(1.0, QColor(0, 0, 0, 220));
+            painter.setOpacity(1.0);
+            painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+            painter.fillRect(this->centralWidget()->rect(), gradient);
+        }
+    }
+    return QMainWindow::eventFilter(obj, event);
 }
 
 void MainWindow::updateHeroWidget() {
@@ -2145,7 +2165,6 @@ void MainWindow::rebuildNavbar() {
         return;
     }
 
-    this->setAttribute(Qt::WA_TranslucentBackground);
     this->setAttribute(Qt::WA_NoSystemBackground, true);
     if (this->centralWidget()) {
         this->centralWidget()->setAttribute(Qt::WA_TranslucentBackground);
