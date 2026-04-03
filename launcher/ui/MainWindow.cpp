@@ -1576,6 +1576,11 @@ void MainWindow::resizeEvent(QResizeEvent* event)
         m_heroTitle->setFont(titleFont);
     }
     
+    // Reposition pill nav bar on resize
+    if (m_pillNavBar) {
+        positionPillNavBar();
+    }
+    
     QMainWindow::resizeEvent(event);
 }
 
@@ -1821,21 +1826,36 @@ void MainWindow::setupHeroWidget() {
     heroLayout->setContentsMargins(80, 40, 80, 60);
     heroLayout->setSpacing(0);
     
-    // Load backgrounds ONLY from filesystem /backgrounds folder (not Qt resources with cat images)
-    QStringList bgPaths;
-    bgPaths << APPLICATION->root() + "/backgrounds";
-    bgPaths << QApplication::applicationDirPath() + "/backgrounds";
-    bgPaths << QApplication::applicationDirPath() + "/../backgrounds";
+    // Load backgrounds from Qt resources
+    QDir bgDir(":/backgrounds");
+    if (bgDir.exists()) {
+        int count = 0;
+        for (const auto& file : bgDir.entryList(QDir::Files)) {
+            if (file.endsWith(".png", Qt::CaseInsensitive) ||
+                file.endsWith(".jpg", Qt::CaseInsensitive) ||
+                file.endsWith(".jpeg", Qt::CaseInsensitive)) {
+                m_backgroundWidget->addWallpaper(":/backgrounds/" + file);
+                count++;
+            }
+        }
+        qDebug() << "MainWindow: Loaded" << count << "wallpapers from Qt resources";
+    }
     
-    for (const auto& path : bgPaths) {
-        QDir bgDir(path);
-        if (bgDir.exists()) {
+    // Also try filesystem /backgrounds folder (for development/portable mode)
+    QStringList fsBgPaths;
+    fsBgPaths << APPLICATION->root() + "/backgrounds";
+    fsBgPaths << QApplication::applicationDirPath() + "/backgrounds";
+    fsBgPaths << QApplication::applicationDirPath() + "/../backgrounds";
+    
+    for (const auto& path : fsBgPaths) {
+        QDir fsBgDir(path);
+        if (fsBgDir.exists()) {
             int count = 0;
-            for (const auto& file : bgDir.entryList(QDir::Files)) {
+            for (const auto& file : fsBgDir.entryList(QDir::Files)) {
                 if (file.endsWith(".png", Qt::CaseInsensitive) ||
                     file.endsWith(".jpg", Qt::CaseInsensitive) ||
                     file.endsWith(".jpeg", Qt::CaseInsensitive)) {
-                    m_backgroundWidget->addWallpaper(bgDir.absoluteFilePath(file));
+                    m_backgroundWidget->addWallpaper(fsBgDir.absoluteFilePath(file));
                     count++;
                 }
             }
@@ -2020,13 +2040,13 @@ void MainWindow::rebuildNavbar() {
 }
 
 void MainWindow::setupPillNavBar() {
-    if (m_pillNavBar) return; // already created
+    if (m_pillNavBar) return;
     
-    // Create the pill container
-    m_pillNavBar = new QWidget(m_backgroundWidget);
+    m_pillNavBar = new QWidget(this->centralWidget());
     m_pillNavBar->setObjectName("pillNavBar");
     m_pillNavBar->setFixedHeight(48);
     m_pillNavBar->setAttribute(Qt::WA_TranslucentBackground);
+    m_pillNavBar->raise();
     
     auto navLayout = new QHBoxLayout(m_pillNavBar);
     navLayout->setContentsMargins(6, 6, 6, 6);
@@ -2067,11 +2087,20 @@ void MainWindow::setupPillNavBar() {
         switchNavPage(id);
     });
     
-    // Insert at top of background widget layout
-    if (auto layout = qobject_cast<QVBoxLayout*>(m_backgroundWidget->layout())) {
-        layout->insertWidget(0, m_pillNavBar);
-        layout->setAlignment(m_pillNavBar, Qt::AlignHCenter | Qt::AlignTop);
-    }
+    positionPillNavBar();
+}
+
+void MainWindow::positionPillNavBar() {
+    if (!m_pillNavBar) return;
+    
+    m_pillNavBar->adjustSize();
+    
+    int navWidth = m_pillNavBar->width();
+    int x = (this->centralWidget()->width() - navWidth) / 2;
+    int y = 24;
+    
+    m_pillNavBar->setGeometry(x, y, navWidth, m_pillNavBar->height());
+    m_pillNavBar->raise();
 }
 
 void MainWindow::switchNavPage(int index) {

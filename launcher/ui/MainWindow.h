@@ -276,6 +276,7 @@ class MainWindow : public QMainWindow {
     QPushButton* m_navModsBtn = nullptr;
     QPushButton* m_navSettingsBtn = nullptr;
     void setupPillNavBar();
+    void positionPillNavBar();
     void switchNavPage(int index);
     
     // Page navigation
