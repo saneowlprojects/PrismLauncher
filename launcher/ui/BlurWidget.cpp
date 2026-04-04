@@ -2,7 +2,7 @@
 #include "BlurWidget.h"
 
 #include <QPainter>
-#include <QGraphicsBlurEffect>
+#include <QPainterPath>
 #include <QPixmap>
 
 BlurWidget::BlurWidget(QWidget* parent)
@@ -36,35 +36,23 @@ void BlurWidget::resizeEvent(QResizeEvent* event)
     update();
 }
 
+QPixmap BlurWidget::applyBlur(const QPixmap& source, int radius) const
+{
+    if (source.isNull() || radius <= 0)
+        return source;
+
+    // Scale down then back up for blur effect (Qt workaround)
+    qreal scale = qMax(0.05, 1.0 - radius / 120.0);
+    QSize smallSize = QSize(source.width() * scale, source.height() * scale);
+    if (smallSize.isEmpty())
+        return source;
+    QPixmap small = source.scaled(smallSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    return small.scaled(source.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+}
+
 void BlurWidget::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event);
-
-    // Grab the content behind this widget
-    if (parentWidget()) {
-        QPoint globalPos = mapToGlobal(QPoint(0, 0));
-        QPixmap bgPixmap = parentWidget()->grab(QRect(globalPos - parentWidget()->mapToGlobal(QPoint(0, 0)), size()));
-
-        // Apply blur
-        QGraphicsBlurEffect blurEffect;
-        blurEffect.setBlurRadius(m_blurRadius);
-
-        QPixmap blurredPixmap(bgPixmap.size());
-        blurredPixmap.fill(Qt::transparent);
-
-        QPainter blurPainter(&blurredPixmap);
-        blurPainter.setRenderHint(QPainter::SmoothPixmapTransform);
-        blurEffect.draw(&blurPainter);
-
-        QPainter clippedPainter(&blurredPixmap);
-        clippedPainter.setRenderHint(QPainter::Antialiasing);
-        QPainterPath clipPath;
-        clipPath.addRoundedRect(blurredPixmap.rect(), m_borderRadius, m_borderRadius);
-        clippedPainter.setClipPath(clipPath);
-        blurEffect.render(&clippedPainter);
-
-        m_blurredPixmap = blurredPixmap;
-    }
 
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
@@ -74,9 +62,12 @@ void BlurWidget::paintEvent(QPaintEvent* event)
     clipPath.addRoundedRect(rect(), m_borderRadius, m_borderRadius);
     painter.setClipPath(clipPath);
 
-    // Draw blurred background
-    if (!m_blurredPixmap.isNull()) {
-        painter.drawPixmap(rect(), m_blurredPixmap);
+    // Grab and blur the content behind this widget
+    if (parentWidget()) {
+        QPoint parentPos = mapTo(parentWidget(), QPoint(0, 0));
+        QPixmap bgPixmap = parentWidget()->grab(QRect(parentPos, size()));
+        QPixmap blurred = applyBlur(bgPixmap, m_blurRadius);
+        painter.drawPixmap(rect(), blurred);
     }
 
     // Draw overlay color
