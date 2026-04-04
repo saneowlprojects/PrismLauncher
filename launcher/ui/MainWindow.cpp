@@ -534,8 +534,8 @@ void MainWindow::retranslateUi()
         ui->actionAccountsButton->setText(profileLabel);
     }
 
-    changeIconButton->setToolTip(ui->actionChangeInstIcon->toolTip());
-    renameButton->setToolTip(ui->actionRenameInstance->toolTip());
+    if (changeIconButton) changeIconButton->setToolTip(ui->actionChangeInstIcon->toolTip());
+    if (renameButton) renameButton->setToolTip(ui->actionRenameInstance->toolTip());
 
     // replace the %1 with the launcher display name in some actions
     if (helpMenuButton && helpMenuButton->toolTip().contains("%1"))
@@ -1685,7 +1685,7 @@ void MainWindow::instanceChanged(const QModelIndex& current, [[maybe_unused]] co
 
         ui->actionKillInstance->setEnabled(m_selectedInstance->isRunning());
         ui->actionExportInstance->setEnabled(m_selectedInstance->canExport());
-        renameButton->setText(m_selectedInstance->name());
+        if (renameButton) renameButton->setText(m_selectedInstance->name());
         m_statusLeft->setText(m_selectedInstance->getStatusbarDescription());
         updateStatusCenter();
         updateInstanceToolIcon(m_selectedInstance->iconKey());
@@ -1729,7 +1729,7 @@ void MainWindow::selectionBad()
     ui->instanceToolBar->setEnabled(false);
     setInstanceActionsEnabled(false);
     updateLaunchButton();
-    renameButton->setText(tr("Rename Instance"));
+    if (renameButton) renameButton->setText(tr("Rename Instance"));
     updateInstanceToolIcon("grass");
 
     // ...and then see if we can enable the previously selected instance
